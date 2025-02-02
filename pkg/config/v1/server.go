@@ -25,6 +25,8 @@ type ServerConfig struct {
 	APIMetadata
 
 	Auth AuthServerConfig `json:"auth,omitempty"`
+
+	ServerToken string `json:"serverToken,omitempty"`
 	// BindAddr specifies the address that the server binds to. By default,
 	// this value is "0.0.0.0".
 	BindAddr string `json:"bindAddr,omitempty"`
@@ -105,6 +107,7 @@ func (c *ServerConfig) Complete() {
 	c.WebServer.Complete()
 	c.SSHTunnelGateway.Complete()
 
+	c.ServerToken = util.EmptyOr(c.ServerToken, "1")
 	c.BindAddr = util.EmptyOr(c.BindAddr, "0.0.0.0")
 	c.BindPort = util.EmptyOr(c.BindPort, 7000)
 	if c.ProxyBindAddr == "" {

@@ -16,9 +16,14 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"runtime/debug"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -316,6 +321,72 @@ func (ctl *Control) WaitClosed() {
 	<-ctl.doneCh
 }
 
+func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
+	ctl.xl.Infof("启动隧道检测服务……")
+	ticker := time.NewTicker(86400 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			xl := ctl.xl
+			url := "https://user.mslmc.cn/api/frp/verifyTunnel?" +
+				"token=" + ctl.serverCfg.ServerToken +
+				"&userToken=" + ctl.loginMsg.User + "&name=" + strings.Split(pxyMsg.ProxyName, ".")[1] +
+				"&remotePort=" + strconv.Itoa(pxyMsg.RemotePort)
+			method := "GET"
+
+			payload := strings.NewReader("")
+
+			client := &http.Client{}
+			req, err := http.NewRequest(method, url, payload)
+			if err != nil {
+				xl.Errorf("Request creation failed:" + err.Error())
+				ctl.conn.Close()
+			}
+
+			res, err := client.Do(req)
+			if err != nil {
+				xl.Errorf("Request failed:" + err.Error())
+				ctl.conn.Close()
+			}
+
+			defer res.Body.Close()
+
+			if res.StatusCode == http.StatusOK {
+				body, _err := io.ReadAll(res.Body)
+				if _err != nil {
+					xl.Errorf("Failed to read response body:" + _err.Error())
+					ctl.conn.Close()
+				}
+
+				var jsonResponse struct {
+					Code int `json:"code"`
+				}
+
+				if _err_ := json.Unmarshal(body, &jsonResponse); _err_ != nil {
+					xl.Errorf("Failed to parse JSON response:" + _err_.Error())
+					ctl.conn.Close()
+				}
+
+				if jsonResponse.Code != 200 {
+					xl.Errorf("ERROR: Status Code" + strconv.Itoa(jsonResponse.Code))
+					xl.Infof("Response body: %s", string(body))
+					ctl.conn.Close()
+				}
+
+				xl.Infof("Response code:" + strconv.Itoa(jsonResponse.Code))
+			} else {
+				xl.Errorf("Failed: Status Code" + strconv.Itoa(res.StatusCode))
+				ctl.conn.Close()
+			}
+		case <-ctl.doneCh:
+			ctl.xl.Infof("关闭隧道检测服务……")
+			return
+		}
+	}
+}
+
 func (ctl *Control) worker() {
 	xl := ctl.xl
 
@@ -384,6 +455,9 @@ func (ctl *Control) handleNewProxy(m msg.Message) {
 	if err == nil {
 		inMsg = &retContent.NewProxy
 		remoteAddr, err = ctl.RegisterProxy(inMsg)
+		if err == nil {
+			go ctl.checkTunnelAvailable(inMsg)
+		}
 	}
 
 	// register proxy in this control
@@ -460,6 +534,82 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 	if err != nil {
 		return
 	}
+
+	xl := ctl.xl
+	//xl.Infof("Proxy Name:" + pxyMsg.ProxyName)
+	//xl.Infof("User:" + ctl.loginMsg.User)
+	//xl.Infof("Proxy Type:" + pxyMsg.ProxyType)
+	//xl.Infof("Remote Port:" + strconv.Itoa(pxyMsg.RemotePort))
+	//xl.Infof("Local IP:" + pxy.GetConfigurer().GetBaseConfig().LocalIP)
+	//xl.Infof("Local Port:" + strconv.Itoa(pxy.GetConfigurer().GetBaseConfig().LocalPort))
+	//xl.Infof(ctl.serverCfg.ServerToken)
+	//xl.Infof("token=" + ctl.serverCfg.ServerToken + "&userToken=" + ctl.loginMsg.User + "&name=" + strings.Split(pxyMsg.ProxyName, ".")[1] + "&remotePort=" + strconv.Itoa(pxyMsg.RemotePort))
+
+	url := "https://user.mslmc.cn/api/frp/verifyTunnel?" +
+		"token=" + ctl.serverCfg.ServerToken +
+		"&userToken=" + ctl.loginMsg.User + "&name=" + strings.Split(pxyMsg.ProxyName, ".")[1] +
+		"&remotePort=" + strconv.Itoa(pxyMsg.RemotePort)
+	method := "GET"
+
+	payload := strings.NewReader("")
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, payload)
+	if err != nil {
+		xl.Errorf("Request creation failed:" + err.Error())
+		err = fmt.Errorf("server internal error")
+		return
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		xl.Errorf("Request failed:" + err.Error())
+		err = fmt.Errorf("server internal error")
+		return
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusOK {
+		body, _err := io.ReadAll(res.Body)
+		if _err != nil {
+			xl.Errorf("Failed to read response body:" + _err.Error())
+			err = fmt.Errorf("server internal error")
+			return
+		}
+
+		var jsonResponse struct {
+			Code int `json:"code"`
+		}
+
+		if _err_ := json.Unmarshal(body, &jsonResponse); _err_ != nil {
+			xl.Errorf("Failed to parse JSON response:" + _err_.Error())
+			err = fmt.Errorf("server internal error")
+			return
+		}
+
+		if jsonResponse.Code != 200 {
+			xl.Errorf("ERROR: Status Code" + strconv.Itoa(jsonResponse.Code))
+			xl.Infof("Response body: %s", string(body))
+			err = fmt.Errorf("illegal proxy")
+			return
+		}
+
+		xl.Infof("Response code:" + strconv.Itoa(jsonResponse.Code))
+		xl.Infof(pxyMsg.ProxyName + " Connected successfully!")
+	} else {
+		xl.Errorf("Failed: Status Code" + strconv.Itoa(res.StatusCode))
+		err = fmt.Errorf("server internal error")
+		return
+	}
+
+	/*
+		if ctl.loginMsg.User != "weheal" || pxyMsg.RemotePort != 25565 {
+			//xl.Infof("illegal proxy")
+			err = fmt.Errorf("illegal proxy")
+			return
+		}
+	*/
 
 	// User info
 	userInfo := plugin.UserInfo{
