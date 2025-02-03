@@ -6,6 +6,10 @@ on:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    permissions:  # 直接在此定义权限
+      contents: write  # 允许发布版本
+      packages: write  # 可选：如需发布包
+      actions: read    # 允许读取 Actions 状态
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,4 +31,4 @@ jobs:
           version: latest
           args: release --clean --release-notes=./Release.md
         env:
-          GITHUB_TOKEN: ${{ secrets.GPR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
