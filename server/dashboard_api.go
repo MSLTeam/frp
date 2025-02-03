@@ -17,6 +17,7 @@ package server
 import (
 	"cmp"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"slices"
 
@@ -54,6 +55,8 @@ func (svr *Service) registerRouteHandlers(helper *httppkg.RouterRegisterHelper) 
 	subRouter.HandleFunc("/api/proxy/{type}/{name}", svr.apiProxyByTypeAndName).Methods("GET")
 	subRouter.HandleFunc("/api/traffic/{name}", svr.apiProxyTraffic).Methods("GET")
 	subRouter.HandleFunc("/api/proxies", svr.deleteProxies).Methods("DELETE")
+	subRouter.HandleFunc("/api/close/{user}", svr.closeProxies).Methods("GET")
+	subRouter.HandleFunc("/api/close/{user}/{name}", svr.closeProxy).Methods("GET")
 
 	// view
 	subRouter.Handle("/favicon.ico", http.FileServer(helper.AssetsFS)).Methods("GET")
@@ -403,4 +406,70 @@ func (svr *Service) deleteProxies(w http.ResponseWriter, r *http.Request) {
 	}
 	cleared, total := mem.StatsCollector.ClearOfflineProxies()
 	log.Infof("cleared [%d] offline proxies, total [%d] proxies", cleared, total)
+}
+
+func (svr *Service) closeProxies(w http.ResponseWriter, r *http.Request) {
+	res := GeneralResponse{Code: 200}
+	params := mux.Vars(r)
+	user := params["user"]
+
+	log.Infof("Http request: [%s]", r.URL.Path)
+	defer func() {
+		log.Infof("Http response [%s]: code [%d]", r.URL.Path, res.Code)
+		w.WriteHeader(res.Code)
+		if len(res.Msg) > 0 {
+			_, _ = w.Write([]byte(res.Msg))
+		}
+	}()
+
+	ctls, ok := svr.ctlManager.GetByUser(user)
+	if ok && len(ctls) > 0 {
+		retmsg := ""
+		// Close all controls associated with the user
+		for _, ctl := range ctls {
+			// Assuming ctl.Close() will handle the closing of the tunnel
+			res.Code = 200
+			retmsg += ctl.runID + ","
+			ctl.Close()
+		}
+		res.Msg = fmt.Sprintf("Closing tunnel for runID: %s", retmsg)
+	} else {
+		// Handle case where no controls are found for the user
+		res.Code = 404
+		res.Msg = "User not found or no active sessions."
+	}
+
+	return
+
+}
+
+func (svr *Service) closeProxy(w http.ResponseWriter, r *http.Request) {
+	res := GeneralResponse{Code: 200}
+	params := mux.Vars(r)
+	user := params["user"]
+	name := params["name"]
+
+	log.Infof("Http request: [%s]", r.URL.Path)
+	defer func() {
+		log.Infof("Http response [%s]: code [%d]", r.URL.Path, res.Code)
+		w.WriteHeader(res.Code)
+		if len(res.Msg) > 0 {
+			_, _ = w.Write([]byte(res.Msg))
+		}
+	}()
+
+	if pxy, ok := svr.pxyManager.GetByName(user + "." + name); ok {
+		runid := pxy.GetUserInfo().RunID
+		ctl, _ok := svr.ctlManager.GetByID(runid)
+		if _ok {
+			ctl.Close()
+			res.Code = 200
+			res.Msg = "succ close " + runid
+			return
+		}
+	}
+	log.Warnf("not found: %s", user+"."+name)
+	res.Code = 404
+	res.Msg = "not found"
+	return
 }

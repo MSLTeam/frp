@@ -50,6 +50,7 @@ import (
 type ControlManager struct {
 	// controls indexed by run id
 	ctlsByRunID map[string]*Control
+	ctlsByUser  map[string][]string
 
 	mu sync.RWMutex
 }
@@ -57,6 +58,7 @@ type ControlManager struct {
 func NewControlManager() *ControlManager {
 	return &ControlManager{
 		ctlsByRunID: make(map[string]*Control),
+		ctlsByUser:  make(map[string][]string),
 	}
 }
 
@@ -64,12 +66,22 @@ func (cm *ControlManager) Add(runID string, ctl *Control) (old *Control) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
+	// Check for existing control and replace if necessary
 	var ok bool
 	old, ok = cm.ctlsByRunID[runID]
 	if ok {
 		old.Replaced(ctl)
 	}
+
+	// Add the control to the runID index
 	cm.ctlsByRunID[runID] = ctl
+
+	// Add the runID to the user index (ctlsByUser)
+	if ctl.loginMsg != nil {
+		user := ctl.loginMsg.User
+		cm.ctlsByUser[user] = append(cm.ctlsByUser[user], runID)
+	}
+
 	return
 }
 
@@ -77,8 +89,26 @@ func (cm *ControlManager) Add(runID string, ctl *Control) (old *Control) {
 func (cm *ControlManager) Del(runID string, ctl *Control) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
+
+	// Check if the control exists and matches the provided one
 	if c, ok := cm.ctlsByRunID[runID]; ok && c == ctl {
+		// Delete from ctlsByRunID
 		delete(cm.ctlsByRunID, runID)
+
+		// Remove the runID from the ctlsByUser map
+		if ctl.loginMsg != nil {
+			user := ctl.loginMsg.User
+
+			// Remove the runID from the user's list in ctlsByUser
+			runIDs := cm.ctlsByUser[user]
+			for i, id := range runIDs {
+				if id == runID {
+					// Remove the runID from the slice
+					cm.ctlsByUser[user] = append(runIDs[:i], runIDs[i+1:]...)
+					break
+				}
+			}
+		}
 	}
 }
 
@@ -87,6 +117,26 @@ func (cm *ControlManager) GetByID(runID string) (ctl *Control, ok bool) {
 	defer cm.mu.RUnlock()
 	ctl, ok = cm.ctlsByRunID[runID]
 	return
+}
+
+func (cm *ControlManager) GetByUser(user string) (ctls []*Control, ok bool) {
+	cm.mu.RLock()
+	defer cm.mu.RUnlock()
+
+	// Get all runIDs associated with the user
+	runIDs, userExists := cm.ctlsByUser[user]
+	if !userExists {
+		return nil, false // User doesn't exist
+	}
+
+	// Fetch each control by runID
+	for _, runID := range runIDs {
+		if ctl, exists := cm.ctlsByRunID[runID]; exists {
+			ctls = append(ctls, ctl)
+		}
+	}
+
+	return ctls, true
 }
 
 func (cm *ControlManager) Close() error {
