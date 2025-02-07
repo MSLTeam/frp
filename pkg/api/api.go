@@ -269,6 +269,7 @@ func (s ApiService) GetLimit(frpsToken string, userToken string) (inLimit, outLi
 	req.Header.Set("User-Agent", ua)
 
 	resp, err := client.Do(req)
+	//if err != nil { return 1280, 1280, err }
 	if err != nil {
 		return 0, 0, err
 	}
@@ -286,7 +287,7 @@ func (s ApiService) GetLimit(frpsToken string, userToken string) (inLimit, outLi
 
 	response := ResGetLimit{}
 	if err = json.Unmarshal(body, &response); err != nil {
-		return 1280, 1280, err
+		return 0, 0, err
 	}
 	if response.Code != 200 {
 		return 0, 0, errors.New("Status Code " + strconv.Itoa(response.Code))
