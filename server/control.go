@@ -593,7 +593,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		return
 	}
 
-	xl := ctl.xl
+	//xl := ctl.xl
 	//xl.Infof("Proxy Name:" + pxyMsg.ProxyName)
 	//xl.Infof("User:" + ctl.loginMsg.User)
 	//xl.Infof("Proxy Type:" + pxyMsg.ProxyType)
@@ -623,7 +623,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		if err != nil {
 			return nil, err
 		}
-		xl.Infof("client speed limit: %dKB/s (Inbound) / %dKB/s (Outbound)", ctl.inLimit, ctl.outLimit)
+		//xl.Infof("client speed limit: %dKB/s (Inbound) / %dKB/s (Outbound)", ctl.inLimit, ctl.outLimit)
 		return limit.NewLimitConn(ctl.inLimit, ctl.outLimit, fconn), nil
 	}
 
