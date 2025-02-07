@@ -143,8 +143,8 @@ func (s ApiService) VerifyTunnel(pxyMsg PxyMsg) (retStr string, err error) {
 		Msg  string `json:"msg"`
 	}
 
-	if err := json.Unmarshal(body, &jsonResponse); err != nil {
-		return "failed to parse JSON response: %v", err
+	if _err := json.Unmarshal(body, &jsonResponse); _err != nil {
+		return "failed to parse JSON response: %v", _err
 	}
 
 	if jsonResponse.Code != 200 {

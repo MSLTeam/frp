@@ -614,14 +614,16 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 
 	retMsg, _err := apiService.VerifyTunnel(apiPxyMsg)
 	if _err != nil {
-		err = fmt.Errorf(retMsg + _err.Error())
+		err = fmt.Errorf(_err.Error())
+		return
 	}
 
 	var workConn proxy.GetWorkConnFn = ctl.GetWorkConn
 	workConn = func() (net.Conn, error) {
-		fconn, err := ctl.GetWorkConn()
-		if err != nil {
-			return nil, err
+		fconn, __err := ctl.GetWorkConn()
+		if __err != nil {
+			err = fmt.Errorf(retMsg + _err.Error())
+			return nil, __err
 		}
 		//xl.Infof("client speed limit: %dKB/s (Inbound) / %dKB/s (Outbound)", ctl.inLimit, ctl.outLimit)
 		return limit.NewLimitConn(ctl.inLimit, ctl.outLimit, fconn), nil
