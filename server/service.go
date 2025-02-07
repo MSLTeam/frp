@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/fatedier/frp/pkg/api"
 	"io"
 	"net"
 	"net/http"
@@ -585,8 +586,24 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login, inter
 		return err
 	}
 
+	var (
+		inLimit  uint64
+		outLimit uint64
+	)
+
+	s, err := api.NewApiService()
+	if err != nil {
+		return err
+	}
+
+	inLimit, outLimit, err = s.GetLimit(svr.cfg.ServerToken, loginMsg.User)
+	if err != nil {
+		return fmt.Errorf(err.Error())
+	}
+	xl.Infof("%s client speed limit: %dKB/s (Inbound) / %dKB/s (Outbound)", loginMsg.User, inLimit, outLimit)
+
 	// TODO(fatedier): use SessionContext
-	ctl, err := NewControl(ctx, svr.rc, svr.pxyManager, svr.pluginManager, authVerifier, ctlConn, !internal, loginMsg, svr.cfg)
+	ctl, err := NewControl(ctx, svr.rc, svr.pxyManager, svr.pluginManager, authVerifier, ctlConn, !internal, loginMsg, svr.cfg, inLimit, outLimit)
 	if err != nil {
 		xl.Warnf("create new controller error: %v", err)
 		// don't return detailed errors to client

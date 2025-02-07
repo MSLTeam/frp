@@ -18,6 +18,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/fatedier/frp/pkg/api"
+	"github.com/fatedier/frp/pkg/limit"
 	"io"
 	"net"
 	"net/http"
@@ -200,9 +202,11 @@ type Control struct {
 	// Server configuration information
 	serverCfg *v1.ServerConfig
 
-	xl     *xlog.Logger
-	ctx    context.Context
-	doneCh chan struct{}
+	xl       *xlog.Logger
+	ctx      context.Context
+	inLimit  uint64
+	outLimit uint64
+	doneCh   chan struct{}
 }
 
 // TODO(fatedier): Referencing the implementation of frpc, encapsulate the input parameters as SessionContext.
@@ -216,6 +220,8 @@ func NewControl(
 	ctlConnEncrypted bool,
 	loginMsg *msg.Login,
 	serverCfg *v1.ServerConfig,
+	inLimit uint64,
+	outLimit uint64,
 ) (*Control, error) {
 	poolCount := loginMsg.PoolCount
 	if poolCount > int(serverCfg.Transport.MaxPoolCount) {
@@ -236,6 +242,8 @@ func NewControl(
 		serverCfg:     serverCfg,
 		xl:            xlog.FromContextSafe(ctx),
 		ctx:           ctx,
+		inLimit:       inLimit,  //rate.NewLimiter(rate.Limit(inLimit*limit.KB), int(inLimit*limit.KB)),
+		outLimit:      outLimit, //rate.NewLimiter(rate.Limit(outLimit*limit.KB), int(outLimit*limit.KB)),
 		doneCh:        make(chan struct{}),
 	}
 	ctl.lastPing.Store(time.Now())
@@ -595,71 +603,29 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 	//xl.Infof(ctl.serverCfg.ServerToken)
 	//xl.Infof("token=" + ctl.serverCfg.ServerToken + "&userToken=" + ctl.loginMsg.User + "&name=" + strings.Split(pxyMsg.ProxyName, ".")[1] + "&remotePort=" + strconv.Itoa(pxyMsg.RemotePort))
 
-	url := "https://user.mslmc.cn/api/frp/verifyTunnel?" +
-		"token=" + ctl.serverCfg.ServerToken +
-		"&userToken=" + ctl.loginMsg.User + "&name=" + strings.Split(pxyMsg.ProxyName, ".")[1] +
-		"&remotePort=" + strconv.Itoa(pxyMsg.RemotePort)
-	method := "GET"
-
-	payload := strings.NewReader("")
-
-	client := &http.Client{}
-	req, err := http.NewRequest(method, url, payload)
-	if err != nil {
-		xl.Errorf("Request creation failed:" + err.Error())
-		err = fmt.Errorf("server internal error")
-		return
+	apiPxyMsg := api.PxyMsg{
+		ServerToken: ctl.serverCfg.ServerToken,
+		UserToken:   ctl.loginMsg.User,
+		ProxyName:   strings.Split(pxyMsg.ProxyName, ".")[1],
+		RemotePort:  pxyMsg.RemotePort,
 	}
 
-	res, err := client.Do(req)
-	if err != nil {
-		xl.Errorf("Request failed:" + err.Error())
-		err = fmt.Errorf("server internal error")
-		return
+	apiService := api.ApiService{}
+
+	retMsg, _err := apiService.VerifyTunnel(apiPxyMsg)
+	if _err != nil {
+		err = fmt.Errorf(retMsg + _err.Error())
 	}
 
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusOK {
-		body, _err := io.ReadAll(res.Body)
-		if _err != nil {
-			xl.Errorf("Failed to read response body:" + _err.Error())
-			err = fmt.Errorf("server internal error")
-			return
+	var workConn proxy.GetWorkConnFn = ctl.GetWorkConn
+	workConn = func() (net.Conn, error) {
+		fconn, err := ctl.GetWorkConn()
+		if err != nil {
+			return nil, err
 		}
-
-		var jsonResponse struct {
-			Code int `json:"code"`
-		}
-
-		if _err_ := json.Unmarshal(body, &jsonResponse); _err_ != nil {
-			xl.Errorf("Failed to parse JSON response:" + _err_.Error())
-			err = fmt.Errorf("server internal error")
-			return
-		}
-
-		if jsonResponse.Code != 200 {
-			xl.Errorf("ERROR: Status Code" + strconv.Itoa(jsonResponse.Code))
-			xl.Infof("Response body: %s", string(body))
-			err = fmt.Errorf("illegal proxy")
-			return
-		}
-
-		xl.Infof("Response code:" + strconv.Itoa(jsonResponse.Code))
-		xl.Infof(pxyMsg.ProxyName + " Connected successfully!")
-	} else {
-		xl.Errorf("Failed: Status Code" + strconv.Itoa(res.StatusCode))
-		err = fmt.Errorf("server internal error")
-		return
+		xl.Infof("client speed limit: %dKB/s (Inbound) / %dKB/s (Outbound)", ctl.inLimit, ctl.outLimit)
+		return limit.NewLimitConn(ctl.inLimit, ctl.outLimit, fconn), nil
 	}
-
-	/*
-		if ctl.loginMsg.User != "weheal" || pxyMsg.RemotePort != 25565 {
-			//xl.Infof("illegal proxy")
-			err = fmt.Errorf("illegal proxy")
-			return
-		}
-	*/
 
 	// User info
 	userInfo := plugin.UserInfo{
@@ -675,7 +641,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		LoginMsg:           ctl.loginMsg,
 		PoolCount:          ctl.poolCount,
 		ResourceController: ctl.rc,
-		GetWorkConnFn:      ctl.GetWorkConn,
+		GetWorkConnFn:      workConn,
 		Configurer:         pxyConf,
 		ServerCfg:          ctl.serverCfg,
 	})
