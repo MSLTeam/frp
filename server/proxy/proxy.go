@@ -201,7 +201,7 @@ func (pxy *BaseProxy) startCommonTCPListenersHandler() {
 					xl.Warnf("listener is closed: %s", err)
 					return
 				}
-				xl.Infof("get a user connection [%s]", c.RemoteAddr().String())
+				xl.Tracef("get a user connection [%s]", c.RemoteAddr().String())
 				go pxy.handleUserTCPConnection(c)
 			}
 		}(listener)
