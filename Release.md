@@ -1,3 +1,3 @@
 ### Features
 
-* Support metadatas and annotations in frpc proxy commands.
+* 接入MSL API
