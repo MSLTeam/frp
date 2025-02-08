@@ -39,7 +39,8 @@ type SessionContext struct {
 	// It should be attached to the login message when reconnecting.
 	RunID string
 	// Underlying control connection. Once conn is closed, the msgDispatcher and the entire Control will exit.
-	Conn net.Conn
+	Conn         net.Conn
+	RemoteDomain string
 	// Indicates whether the connection is encrypted.
 	ConnEncrypted bool
 	// Sets authentication based on selected method
@@ -159,6 +160,7 @@ func (ctl *Control) handleReqWorkConn(_ msg.Message) {
 func (ctl *Control) handleNewProxyResp(m msg.Message) {
 	xl := ctl.xl
 	inMsg := m.(*msg.NewProxyResp)
+
 	// Server will return NewProxyResp message to each NewProxy message.
 	// Start a new proxy handler if no error got
 	err := ctl.pm.StartProxy(inMsg.ProxyName, inMsg.RemoteAddr, inMsg.Error)
@@ -166,6 +168,10 @@ func (ctl *Control) handleNewProxyResp(m msg.Message) {
 		xl.Warnf("[%s] start error: %v", inMsg.ProxyName, err)
 	} else {
 		xl.Infof("[%s] start proxy success", inMsg.ProxyName)
+		if ctl.sessionCtx.RemoteDomain != "" {
+			ctl.
+				xl.Infof(" 隧道已成功启动！远程连接地址：%s \n若上面地址无法连接，请使用该IP：%v", ctl.sessionCtx.RemoteDomain+inMsg.RemoteAddr, ctl.sessionCtx.Common.ServerAddr+inMsg.RemoteAddr)
+		}
 	}
 }
 

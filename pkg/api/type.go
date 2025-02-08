@@ -3,11 +3,9 @@ package api
 import "fmt"
 
 type ResGetProxyCfg struct {
-	Status  int    `json:"status"`
-	Message string `json:"message"`
-	Data    struct {
-		Config string `json:"config"`
-	}
+	Code    int    `json:"code"`
+	Message string `json:"msg"`
+	Data    string `json:"data"`
 }
 type ResCheckFrpToken struct {
 	Status  int    `json:"status"`

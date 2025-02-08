@@ -17,10 +17,12 @@ package sub
 import (
 	"context"
 	"fmt"
+	"github.com/fatedier/frp/pkg/api"
 	"io/fs"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -37,6 +39,9 @@ import (
 
 var (
 	cfgFile          string
+	cfgUser          string
+	cfgTunnel        int
+	cfgForceGet      bool
 	cfgDir           string
 	showVersion      bool
 	strictConfigMode bool
@@ -44,6 +49,9 @@ var (
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "./frpc.ini", "config file of frpc")
+	rootCmd.PersistentFlags().StringVarP(&cfgUser, "user", "u", "", "user token")
+	rootCmd.PersistentFlags().IntVarP(&cfgTunnel, "tunnel", "t", 0, "tunnel id")
+	rootCmd.PersistentFlags().BoolVarP(&cfgForceGet, "force_get", "f", false, "在使用简易启动时，是否强制从云端获取配置")
 	rootCmd.PersistentFlags().StringVarP(&cfgDir, "config_dir", "", "", "config directory, run one frpc service for each file in config directory")
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "version of frpc")
 	rootCmd.PersistentFlags().BoolVarP(&strictConfigMode, "strict_config", "", true, "strict config parsing mode, unknown fields will cause an errors")
@@ -63,6 +71,67 @@ var rootCmd = &cobra.Command{
 		if cfgDir != "" {
 			_ = runMultipleClients(cfgDir)
 			return nil
+		}
+
+		if cfgUser != "" && cfgTunnel > 0 {
+			s, _err := api.NewApiService()
+			if _err != nil {
+				log.Warnf("Initialize API Service Failed, err: %s", _err)
+			}
+
+			_, dirErr := os.Stat("./frpConf/" + strconv.Itoa(cfgTunnel) + ".toml")
+			if cfgForceGet == false && dirErr == nil {
+				err := runClient("./frpConf/" + strconv.Itoa(cfgTunnel) + ".toml")
+				if err != nil {
+					fmt.Println(err)
+					fmt.Println("您在使用简易启动的时候出现了异常！可能是配置文件出现了改动，请删除对应配置文件或在启动指令后添加-f参数以强制重新获取隧道配置！")
+					os.Exit(1)
+				}
+				return nil
+			}
+
+			log.Infof("To Get Config File from API...")
+
+			_, err := os.Stat("./frpConf")
+			if err == nil {
+			} else if os.IsNotExist(err) {
+				err := os.Mkdir("./frpConf", os.ModePerm)
+				if err != nil {
+					fmt.Println("Make toml folder failed: " + err.Error())
+					os.Exit(1)
+				}
+			} else {
+				fmt.Println("Make toml folder failed: " + err.Error())
+				os.Exit(1)
+			}
+
+			proxyID := cfgTunnel
+
+			configPath := filepath.Join("frpConf", fmt.Sprintf("%s.toml", strconv.Itoa(proxyID)))
+
+			configContent, err := s.ProxyStartGetCfg(cfgUser, proxyID)
+			if err != nil {
+				// 无法获取配置文件，直接关闭软件，防止启动上一个配置文件导致二次报错
+				fmt.Println("获取配置文件失败，请检查参数: " + err.Error())
+				os.Exit(1)
+			}
+
+			configFile, err := os.OpenFile(configPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm)
+			if err != nil {
+				fmt.Println("访问配置文件出错: " + err.Error())
+				os.Exit(1)
+			}
+
+			defer configFile.Close()
+
+			_, err = configFile.WriteString(configContent) // 直接写入字符串数据
+			// 写入文件是否成功检测
+			if err != nil {
+				fmt.Println("写入配置文件出错: " + err.Error())
+
+				os.Exit(1)
+			}
+			cfgFile = configPath
 		}
 
 		// Do not show command usage here.

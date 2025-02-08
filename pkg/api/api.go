@@ -28,11 +28,11 @@ func NewApiService() (s *ApiService, err error) {
 }
 
 // ProxyStartGetCfg 简单启动获取Cfg
-func (s ApiService) ProxyStartGetCfg(frpToken string, proxyId string) (cfg string, err error) {
-	api, _ := url.Parse(apiUrl + "/client/config")
+func (s ApiService) ProxyStartGetCfg(userToken string, proxyId int) (cfg string, err error) {
+	api, _ := url.Parse(apiUrl + "/getTunnelConfig")
 	values := url.Values{}
-	values.Set("frp_token", frpToken)
-	values.Set("proxy_id", proxyId)
+	values.Set("id", strconv.Itoa(proxyId))
+	values.Set("userToken", userToken)
 	// Encode 请求参数
 	api.RawQuery = values.Encode()
 	defer func(u *url.URL) {
@@ -71,7 +71,7 @@ func (s ApiService) ProxyStartGetCfg(frpToken string, proxyId string) (cfg strin
 	if err = json.Unmarshal(body, &response); err != nil {
 		return "", err
 	}
-	return response.Data.Config, nil
+	return response.Data, nil
 }
 
 // SubmitRunId 提交runID至服务器
@@ -120,22 +120,22 @@ func (s ApiService) VerifyTunnel(pxyMsg PxyMsg) (retStr string, err error) {
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, api.String(), nil)
 	if err != nil {
-		return "request creation failed: %v", err
+		return "request creation failed", err
 	}
 	req.Header.Set("User-Agent", ua)
 	res, err := client.Do(req)
 	if err != nil {
-		return "request failed: %v", err
+		return "request failed", err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return "failed: Status Code %d", errors.New(strconv.Itoa(res.StatusCode))
+		return "failed: Status Code " + strconv.Itoa(res.StatusCode), errors.New(strconv.Itoa(res.StatusCode))
 	}
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return "failed to read response body: %v", err
+		return "failed to read response body", err
 	}
 
 	var jsonResponse struct {
@@ -144,11 +144,11 @@ func (s ApiService) VerifyTunnel(pxyMsg PxyMsg) (retStr string, err error) {
 	}
 
 	if _err := json.Unmarshal(body, &jsonResponse); _err != nil {
-		return "failed to parse JSON response: %v", _err
+		return "failed to parse JSON response", _err
 	}
 
 	if jsonResponse.Code != 200 {
-		return "ERROR: Status Code " + strconv.Itoa(jsonResponse.Code), errors.New(jsonResponse.Msg)
+		return jsonResponse.Msg, errors.New("ERROR: Status Code " + strconv.Itoa(jsonResponse.Code))
 	}
 
 	return "", nil

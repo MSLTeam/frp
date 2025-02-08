@@ -16,15 +16,11 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/fatedier/frp/pkg/api"
 	"github.com/fatedier/frp/pkg/limit"
-	"io"
 	"net"
-	"net/http"
 	"runtime/debug"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -380,66 +376,29 @@ func (ctl *Control) WaitClosed() {
 }
 
 func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
-	ctl.xl.Infof("启动隧道检测服务……")
-	ticker := time.NewTicker(86400 * time.Second)
+	ctl.xl.Infof("starting the VerifyTunnel Service...")
+	ticker := time.NewTicker(10 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			xl := ctl.xl
-			url := "https://user.mslmc.cn/api/frp/verifyTunnel?" +
-				"token=" + ctl.serverCfg.ServerToken +
-				"&userToken=" + ctl.loginMsg.User + "&name=" + strings.Split(pxyMsg.ProxyName, ".")[1] +
-				"&remotePort=" + strconv.Itoa(pxyMsg.RemotePort)
-			method := "GET"
-
-			payload := strings.NewReader("")
-
-			client := &http.Client{}
-			req, err := http.NewRequest(method, url, payload)
-			if err != nil {
-				xl.Errorf("Request creation failed:" + err.Error())
-				ctl.conn.Close()
+			apiPxyMsg := api.PxyMsg{
+				ServerToken: ctl.serverCfg.ServerToken,
+				UserToken:   ctl.loginMsg.User,
+				ProxyName:   strings.Split(pxyMsg.ProxyName, ".")[1],
+				RemotePort:  pxyMsg.RemotePort,
 			}
 
-			res, err := client.Do(req)
-			if err != nil {
-				xl.Errorf("Request failed:" + err.Error())
-				ctl.conn.Close()
-			}
+			apiService := api.ApiService{}
 
-			defer res.Body.Close()
-
-			if res.StatusCode == http.StatusOK {
-				body, _err := io.ReadAll(res.Body)
-				if _err != nil {
-					xl.Errorf("Failed to read response body:" + _err.Error())
-					ctl.conn.Close()
-				}
-
-				var jsonResponse struct {
-					Code int `json:"code"`
-				}
-
-				if _err_ := json.Unmarshal(body, &jsonResponse); _err_ != nil {
-					xl.Errorf("Failed to parse JSON response:" + _err_.Error())
-					ctl.conn.Close()
-				}
-
-				if jsonResponse.Code != 200 {
-					xl.Errorf("ERROR: Status Code" + strconv.Itoa(jsonResponse.Code))
-					xl.Infof("Response body: %s", string(body))
-					ctl.conn.Close()
-				}
-
-				xl.Infof("Response code:" + strconv.Itoa(jsonResponse.Code))
-			} else {
-				xl.Errorf("Failed: Status Code" + strconv.Itoa(res.StatusCode))
+			retMsg, _err := apiService.VerifyTunnel(apiPxyMsg)
+			if _err != nil {
+				ctl.xl.Errorf(retMsg)
 				ctl.conn.Close()
 			}
 		case <-ctl.doneCh:
-			ctl.xl.Infof("关闭隧道检测服务……")
+			ctl.xl.Infof("closing the VerifyTunnel Service...")
 			return
 		}
 	}
@@ -593,16 +552,6 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		return
 	}
 
-	//xl := ctl.xl
-	//xl.Infof("Proxy Name:" + pxyMsg.ProxyName)
-	//xl.Infof("User:" + ctl.loginMsg.User)
-	//xl.Infof("Proxy Type:" + pxyMsg.ProxyType)
-	//xl.Infof("Remote Port:" + strconv.Itoa(pxyMsg.RemotePort))
-	//xl.Infof("Local IP:" + pxy.GetConfigurer().GetBaseConfig().LocalIP)
-	//xl.Infof("Local Port:" + strconv.Itoa(pxy.GetConfigurer().GetBaseConfig().LocalPort))
-	//xl.Infof(ctl.serverCfg.ServerToken)
-	//xl.Infof("token=" + ctl.serverCfg.ServerToken + "&userToken=" + ctl.loginMsg.User + "&name=" + strings.Split(pxyMsg.ProxyName, ".")[1] + "&remotePort=" + strconv.Itoa(pxyMsg.RemotePort))
-
 	apiPxyMsg := api.PxyMsg{
 		ServerToken: ctl.serverCfg.ServerToken,
 		UserToken:   ctl.loginMsg.User,
@@ -614,7 +563,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 
 	retMsg, _err := apiService.VerifyTunnel(apiPxyMsg)
 	if _err != nil {
-		err = fmt.Errorf(_err.Error())
+		err = fmt.Errorf(retMsg)
 		return
 	}
 
@@ -622,7 +571,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 	workConn = func() (net.Conn, error) {
 		fconn, __err := ctl.GetWorkConn()
 		if __err != nil {
-			err = fmt.Errorf(retMsg + _err.Error())
+			err = fmt.Errorf(__err.Error())
 			return nil, __err
 		}
 		//xl.Infof("client speed limit: %dKB/s (Inbound) / %dKB/s (Outbound)", ctl.inLimit, ctl.outLimit)

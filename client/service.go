@@ -119,7 +119,7 @@ type Service struct {
 	// The configuration file used to initialize this client, or an empty
 	// string if no configuration file was used.
 	configFilePath string
-
+	remoteDomain   string
 	// service context
 	ctx context.Context
 	// call cancel to stop service
@@ -245,6 +245,12 @@ func (svr *Service) login() (conn net.Conn, connector Connector, err error) {
 		return
 	}
 
+	if svr.common.Metadatas["mslFrpRemoteDomain"] != "" {
+		svr.remoteDomain = svr.common.Metadatas["mslFrpRemoteDomain"]
+		delete(svr.common.Metadatas, "mslFrpRemoteDomain")
+		//xl.Infof(svr.remoteDomain + svr.common.Metadatas["mslFrpRemoteDomain"])
+	}
+
 	loginMsg := &msg.Login{
 		Arch:      runtime.GOARCH,
 		Os:        runtime.GOOS,
@@ -314,6 +320,7 @@ func (svr *Service) loopLoginUntilSuccess(maxInterval time.Duration, firstLoginE
 			Common:        svr.common,
 			RunID:         svr.runID,
 			Conn:          conn,
+			RemoteDomain:  svr.remoteDomain,
 			ConnEncrypted: connEncrypted,
 			AuthSetter:    svr.authSetter,
 			Connector:     connector,
