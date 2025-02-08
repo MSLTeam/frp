@@ -377,7 +377,7 @@ func (ctl *Control) WaitClosed() {
 
 func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
 	ctl.xl.Infof("starting the VerifyTunnel Service...")
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(86400 * time.Second)
 	defer ticker.Stop()
 
 	for {

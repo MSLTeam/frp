@@ -170,7 +170,7 @@ func (ctl *Control) handleNewProxyResp(m msg.Message) {
 		xl.Infof("[%s] start proxy success", inMsg.ProxyName)
 		if ctl.sessionCtx.RemoteDomain != "" {
 			ctl.
-				xl.Infof(" 隧道已成功启动！远程连接地址：%s \n若上面地址无法连接，请使用该IP：%v", ctl.sessionCtx.RemoteDomain+inMsg.RemoteAddr, ctl.sessionCtx.Common.ServerAddr+inMsg.RemoteAddr)
+				xl.Infof(" 隧道已成功启动！\n远程连接地址：%s \n若上面地址无法连接，请使用该IP：%v", ctl.sessionCtx.RemoteDomain+inMsg.RemoteAddr, ctl.sessionCtx.Common.ServerAddr+inMsg.RemoteAddr)
 		}
 	}
 }
