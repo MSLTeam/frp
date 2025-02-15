@@ -16,7 +16,7 @@ import (
 type ApiService struct {
 }
 
-var apiUrl = "https://user.mslmc.cn/api/frp"
+var apiUrl = "https://user.mslmc.net/api/frp"
 var tr = &http.Transport{
 	DisableKeepAlives: true,
 }
