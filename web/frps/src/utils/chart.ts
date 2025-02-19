@@ -249,7 +249,7 @@ function DrawProxyTrafficChart(
       },
     },
     legend: {
-      data: ['Traffic In', 'Traffic Out'],
+      data: ['流量(入)', '流量(出)'],
     },
     grid: {
       left: '3%',
