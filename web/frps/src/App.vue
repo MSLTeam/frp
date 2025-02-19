@@ -23,13 +23,15 @@
     </header>
     <section>
       <el-row>
-        <el-col id="side-nav" :xs="24" :md="4">
+        <el-col id="side-nav" :xs="24" :md="3">
           <el-menu
             default-active="/"
             mode="vertical"
             theme="light"
+            class="el-menu--vertical"
             router="false"
             @select="handleSelect"
+            style="height: calc(100vh - 60px);"
           >
             <el-menu-item index="/">
               <el-icon><home-filled /></el-icon>
@@ -55,7 +57,7 @@
           </el-menu>
         </el-col>
 
-        <el-col :xs="24" :md="20">
+        <el-col :xs="24" :md="21">
           <div id="content">
             <router-view></router-view>
           </div>
@@ -97,7 +99,7 @@ header {
 }
 
 html.dark header {
-  background: linear-gradient(90deg, #395c74, #1c3a4d);
+  background: linear-gradient(90deg, #6864c1, #4860a8);
 }
 
 .header-content {

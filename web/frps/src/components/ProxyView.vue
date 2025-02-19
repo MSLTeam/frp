@@ -1,96 +1,93 @@
 <template>
-  <div>
-    <el-page-header
-      :icon="null"
-      style="width: 100%; margin-left: 30px; margin-bottom: 20px"
-    >
-      <template #title>
-        <span>{{ proxyType }}</span>
-      </template>
-      <template #content> </template>
-      <template #extra>
-        <div class="flex items-center" style="margin-right: 30px">
-          <el-popconfirm
-            title="确定清除全部离线隧道?"
-            @confirm="clearOfflineProxies"
-          >
-            <template #reference>
-              <el-button>清理离线隧道</el-button>
-            </template>
-          </el-popconfirm>
-          <el-button @click="$emit('refresh')">刷新</el-button>
+  <div class="container">
+    <el-card style="width: 100%; margin-left: 20px">
+      <template #header>
+        <div style="display: flex; justify-content: space-between">
+          <h3 style="margin: 0">{{ proxyType }}</h3>
+          <div class="flex items-center" style="margin-right: 30px">
+            <el-popconfirm
+              title="确定清除全部离线隧道?"
+              @confirm="clearOfflineProxies"
+            >
+              <template #reference>
+                <el-button>清理离线隧道</el-button>
+              </template>
+            </el-popconfirm>
+            <el-button @click="$emit('refresh')">刷新</el-button>
+          </div>
         </div>
       </template>
-    </el-page-header>
+      <div>
+        <el-table
+          :data="proxies"
+          :default-sort="{ prop: 'name', order: 'ascending' }"
+          style="width: 100%"
+        >
+          <el-table-column type="expand">
+            <template #default="props">
+              <ProxyViewExpand :row="props.row" :proxyType="proxyType" />
+            </template>
+          </el-table-column>
+          <el-table-column label="隧道名字" sortable>
+            <template #default="scope">
+              {{ scope.row.name.split('.')[1] || '' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="用户UID" sortable>
+            <template #default="scope">
+              {{scope.row.name.split('.')[0].split('-')[1]}}
+            </template>
+          </el-table-column>
+          <el-table-column label="远程端口" prop="port" sortable> </el-table-column>
+          <el-table-column label="连接数量" prop="conns" sortable>
+          </el-table-column>
+          <el-table-column
+            label="流量(入)"
+            prop="trafficIn"
+            :formatter="formatTrafficIn"
+            sortable
+          >
+          </el-table-column>
+          <el-table-column
+            label="流量(出)"
+            prop="trafficOut"
+            :formatter="formatTrafficOut"
+            sortable
+          >
+          </el-table-column>
+          <el-table-column label="客户端版本" prop="clientVersion" sortable>
+          </el-table-column>
+          <el-table-column label="状态" prop="status" sortable>
+            <template #default="scope">
+              <el-tag v-if="scope.row.status === 'online'" type="success">{{
+                  scope.row.status === 'online' ? '在线' : scope.row.status
+                }}</el-tag>
+              <el-tag v-else type="danger">{{ scope.row.status === 'offline' ? '离线' : scope.row.status }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作">
+            <template #default="scope">
+              <el-button
+                type="primary"
+                :name="scope.row.name"
+                style="margin-bottom: 10px"
+                @click="dialogVisibleName = scope.row.name; dialogVisible = true"
+              >流量统计
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
 
-    <el-table
-      :data="proxies"
-      :default-sort="{ prop: 'name', order: 'ascending' }"
-      style="width: 100%"
-    >
-      <el-table-column type="expand">
-        <template #default="props">
-          <ProxyViewExpand :row="props.row" :proxyType="proxyType" />
-        </template>
-      </el-table-column>
-      <el-table-column label="隧道名字" sortable>
-        <template #default="scope">
-          {{ scope.row.name.split('.')[1] || '' }}
-        </template>
-      </el-table-column>
-      <el-table-column label="用户UID" sortable>
-        <template #default="scope">
-          {{scope.row.name.split('.')[0].split('-')[1]}}
-        </template>
-      </el-table-column>
-      <el-table-column label="远程端口" prop="port" sortable> </el-table-column>
-      <el-table-column label="连接数量" prop="conns" sortable>
-      </el-table-column>
-      <el-table-column
-        label="流量(入)"
-        prop="trafficIn"
-        :formatter="formatTrafficIn"
-        sortable
-      >
-      </el-table-column>
-      <el-table-column
-        label="流量(出)"
-        prop="trafficOut"
-        :formatter="formatTrafficOut"
-        sortable
-      >
-      </el-table-column>
-      <el-table-column label="客户端版本" prop="clientVersion" sortable>
-      </el-table-column>
-      <el-table-column label="状态" prop="status" sortable>
-        <template #default="scope">
-          <el-tag v-if="scope.row.status === 'online'" type="success">{{
-            scope.row.status === 'online' ? '在线' : scope.row.status
-          }}</el-tag>
-          <el-tag v-else type="danger">{{ scope.row.status === 'offline' ? '离线' : scope.row.status }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作">
-        <template #default="scope">
-          <el-button
-            type="primary"
-            :name="scope.row.name"
-            style="margin-bottom: 10px"
-            @click="dialogVisibleName = scope.row.name; dialogVisible = true"
-            >流量统计
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+      <el-dialog
+        v-model="dialogVisible"
+        destroy-on-close="true"
+        :title="dialogVisibleName"
+        width="700px">
+        <Traffic :proxyName="dialogVisibleName" />
+      </el-dialog>
+    </el-card>
   </div>
-
-  <el-dialog
-    v-model="dialogVisible"
-    destroy-on-close="true"
-    :title="dialogVisibleName"
-    width="700px">
-    <Traffic :proxyName="dialogVisibleName" />
-  </el-dialog>
 </template>
 
 <script setup lang="ts">
