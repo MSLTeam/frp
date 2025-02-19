@@ -1,36 +1,35 @@
 <template>
-  <div>
-    <el-row>
+  <div class="server-overview-container">
+    <el-row :gutter="20">
       <el-col :md="12">
-        <div class="source">
-          <el-form
-            label-position="left"
-            label-width="220px"
-            class="server_info"
-          >
+        <el-card class="server-info-card">
+          <div class="server-info-header">
+            <h3>服务器信息</h3>
+          </div>
+          <el-form label-position="left" label-width="220px" class="server-info-form">
             <el-form-item label="版本">
-              <span>{{ data.version }}</span>
+              <span class="info-value">{{ data.version }}</span>
             </el-form-item>
             <el-form-item label="服务端口">
-              <span>{{ data.bindPort }}</span>
+              <span class="info-value">{{ data.bindPort }}</span>
             </el-form-item>
             <el-form-item label="KCP服务端口" v-if="data.kcpBindPort != 0">
-              <span>{{ data.kcpBindPort }}</span>
+              <span class="info-value">{{ data.kcpBindPort }}</span>
             </el-form-item>
             <el-form-item label="QUIC服务端口" v-if="data.quicBindPort != 0">
-              <span>{{ data.quicBindPort }}</span>
+              <span class="info-value">{{ data.quicBindPort }}</span>
             </el-form-item>
             <el-form-item label="HTTP服务端口" v-if="data.vhostHTTPPort != 0">
-              <span>{{ data.vhostHTTPPort }}</span>
+              <span class="info-value">{{ data.vhostHTTPPort }}</span>
             </el-form-item>
             <el-form-item label="HTTPS服务端口" v-if="data.vhostHTTPSPort != 0">
-              <span>{{ data.vhostHTTPSPort }}</span>
+              <span class="info-value">{{ data.vhostHTTPSPort }}</span>
             </el-form-item>
             <el-form-item
               label="TCPMux HTTPConnect服务端口"
               v-if="data.tcpmuxHTTPConnectPort != 0"
             >
-              <span>{{ data.tcpmuxHTTPConnectPort }}</span>
+              <span class="info-value">{{ data.tcpmuxHTTPConnectPort }}</span>
             </el-form-item>
             <el-form-item
               label="子域名"
@@ -39,38 +38,39 @@
               <LongSpan :content="data.subdomainHost" :length="30"></LongSpan>
             </el-form-item>
             <el-form-item label="最大连接池数量">
-              <span>{{ data.maxPoolCount }}</span>
+              <span class="info-value">{{ data.maxPoolCount }}</span>
             </el-form-item>
             <el-form-item label="客户端最大端口限制数">
-              <span>{{ data.maxPortsPerClient }}</span>
+              <span class="info-value">{{ data.maxPortsPerClient }}</span>
             </el-form-item>
             <el-form-item label="允许的端口" v-if="data.allowPortsStr != ''">
               <LongSpan :content="data.allowPortsStr" :length="30"></LongSpan>
             </el-form-item>
             <el-form-item label="强制TLS" v-if="data.tlsForce === true">
-              <span>{{ data.tlsForce }}</span>
+              <span class="info-value">{{ data.tlsForce }}</span>
             </el-form-item>
             <el-form-item label="心跳包超时">
-              <span>{{ data.heartbeatTimeout }}</span>
+              <span class="info-value">{{ data.heartbeatTimeout }}</span>
             </el-form-item>
             <el-form-item label="客户端数量">
-              <span>{{ data.clientCounts }}</span>
+              <span class="info-value">{{ data.clientCounts }}</span>
             </el-form-item>
             <el-form-item label="当前连接数">
-              <span>{{ data.curConns }}</span>
+              <span class="info-value">{{ data.curConns }}</span>
             </el-form-item>
             <el-form-item label="隧道数">
-              <span>{{ data.proxyCounts }}</span>
+              <span class="info-value">{{ data.proxyCounts }}</span>
             </el-form-item>
           </el-form>
-        </div>
+        </el-card>
       </el-col>
       <el-col :md="12">
-        <div
-          id="traffic"
-          style="width: 400px; height: 250px; margin-bottom: 30px"
-        ></div>
-        <div id="proxies" style="width: 400px; height: 250px"></div>
+        <el-card class="chart-card">
+          <div id="traffic" class="chart-container"></div>
+        </el-card>
+        <el-card class="chart-card">
+          <div id="proxies" class="chart-container"></div>
+        </el-card>
       </el-col>
     </el-row>
   </div>
@@ -163,33 +163,34 @@ const fetchData = () => {
 fetchData()
 </script>
 
-<style>
-.source {
-  border-radius: 4px;
-  transition: 0.2s;
-  padding-left: 24px;
-  padding-right: 24px;
+<style scoped>
+.server-overview-container {
+  padding-left: 20px;
 }
 
-.server_info {
-  margin-left: 40px;
-  font-size: 0px;
+.server-info-card {
+  margin-bottom: 20px;
 }
 
-.server_info .el-form-item__label {
-  color: #99a9bf;
-  height: 40px;
-  line-height: 40px;
+.chart-card {
+  margin-bottom: 20px;
 }
 
-.server_info .el-form-item__content {
-  height: 40px;
-  line-height: 40px;
+.server-info-header {
+  margin-bottom: 20px;
 }
 
-.server_info .el-form-item {
-  margin-right: 0;
-  margin-bottom: 0;
+.server-info-form {
+  padding: 20px;
+}
+
+.info-value {
+  font-weight: bold;
+  color: #409EFF;
+}
+
+.chart-container {
   width: 100%;
+  height: 250px;
 }
 </style>
