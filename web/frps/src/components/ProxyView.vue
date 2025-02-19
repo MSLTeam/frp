@@ -35,12 +35,12 @@
       </el-table-column>
       <el-table-column label="隧道名字" sortable>
         <template #default="scope">
-          {{scope.row.name.Split('.')[1]}}
+          {{ scope.row.name.split('.')[1] || '' }}
         </template>
       </el-table-column>
       <el-table-column label="用户UID" sortable>
         <template #default="scope">
-          {{scope.row.name.Split('.')[0].Split('-')[1]}}
+          {{scope.row.name.split('.')[0].split('-')[1]}}
         </template>
       </el-table-column>
       <el-table-column label="远程端口" prop="port" sortable> </el-table-column>
