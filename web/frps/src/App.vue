@@ -3,14 +3,15 @@
     <header class="grid-content header-color">
       <div class="header-content">
         <div class="brand">
-          <a href="#">frp</a>
+          <img src="/favicon.ico" alt="Logo" class="logo" />
+          <a href="#">MSL-Frp节点控制面板</a>
         </div>
         <div class="dark-switch">
           <el-switch
             v-model="darkmodeSwitch"
             inline-prompt
-            active-text="Dark"
-            inactive-text="Light"
+            active-text="🌙"
+            inactive-text="☀"
             @change="toggleDark"
             style="
               --el-switch-on-color: #444452;
@@ -30,10 +31,14 @@
             router="false"
             @select="handleSelect"
           >
-            <el-menu-item index="/">Overview</el-menu-item>
+            <el-menu-item index="/">
+              <el-icon><home-filled /></el-icon>
+              <span>总览</span>
+            </el-menu-item>
             <el-sub-menu index="/proxies">
               <template #title>
-                <span>Proxies</span>
+                <el-icon><connection /></el-icon>
+                <span>隧道</span>
               </template>
               <el-menu-item index="/proxies/tcp">TCP</el-menu-item>
               <el-menu-item index="/proxies/udp">UDP</el-menu-item>
@@ -43,7 +48,10 @@
               <el-menu-item index="/proxies/stcp">STCP</el-menu-item>
               <el-menu-item index="/proxies/sudp">SUDP</el-menu-item>
             </el-sub-menu>
-            <el-menu-item index="">Help</el-menu-item>
+            <el-menu-item index="">
+              <el-icon><user /></el-icon>
+              <span>MSL用户中心</span>
+            </el-menu-item>
           </el-menu>
         </el-col>
 
@@ -61,6 +69,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useDark, useToggle } from '@vueuse/core'
+import { HomeFilled, Connection, User } from '@element-plus/icons-vue'
 
 const isDark = useDark()
 const darkmodeSwitch = ref(isDark)
@@ -68,31 +77,55 @@ const toggleDark = useToggle(isDark)
 
 const handleSelect = (key: string) => {
   if (key == '') {
-    window.open('https://github.com/fatedier/frp')
+    window.open('https://user.mslmc.net')
   }
 }
 </script>
 
 <style>
 body {
-  margin: 0px;
+  margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, Helvetica Neue, sans-serif;
+  min-height: 100vh;
 }
 
 header {
   width: 100%;
   height: 60px;
+  background: linear-gradient(90deg, #585bff, #986ee2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.header-color {
-  background: #58b7ff;
-}
-
-html.dark .header-color {
-  background: #395c74;
+html.dark header {
+  background: linear-gradient(90deg, #395c74, #1c3a4d);
 }
 
 .header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+}
+
+.brand a {
+  color: #fff;
+  font-size: 25px;
+  font-weight: bold;
+  text-decoration: none;
+  margin-left: 10px;
+  line-height: 60px; /* Ensures vertical centering */
+}
+
+.logo {
+  height: 40px;
+}
+
+.dark-switch {
   display: flex;
   align-items: center;
 }
@@ -102,26 +135,18 @@ html.dark .header-color {
   padding-right: 40px;
 }
 
-.brand {
+.el-menu-item, .el-sub-menu__title {
   display: flex;
+  align-items: center;
+}
+
+.el-menu-item span, .el-sub-menu__title span {
+  margin-left: 10px;
+}
+
+.el-menu-item, .el-sub-menu__title {
   justify-content: flex-start;
 }
 
-.brand a {
-  color: #fff;
-  background-color: transparent;
-  margin-left: 20px;
-  line-height: 25px;
-  font-size: 25px;
-  padding: 15px 15px;
-  height: 30px;
-  text-decoration: none;
-}
 
-.dark-switch {
-  display: flex;
-  justify-content: flex-end;
-  flex-grow: 1;
-  padding-right: 40px;
-}
 </style>
