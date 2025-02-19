@@ -77,7 +77,7 @@
             :name="scope.row.name"
             style="margin-bottom: 10px"
             @click="dialogVisibleName = scope.row.name; dialogVisible = true"
-            >Traffic
+            >流量统计
           </el-button>
         </template>
       </el-table-column>

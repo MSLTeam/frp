@@ -35,8 +35,8 @@ function DrawTrafficChart(
 
   const option = {
     title: {
-      text: 'Network Traffic',
-      subtext: 'today',
+      text: '网络流量',
+      subtext: '今日',
       left: 'center',
     },
     tooltip: {
@@ -58,11 +58,11 @@ function DrawTrafficChart(
         data: [
           {
             value: trafficIn,
-            name: 'Traffic In',
+            name: '流量(入)',
           },
           {
             value: trafficOut,
-            name: 'Traffic Out',
+            name: '流量(出)',
           },
         ],
         emphasis: {
@@ -88,8 +88,8 @@ function DrawProxyChart(elementId: string, serverInfo: any) {
 
   const option = {
     title: {
-      text: 'Proxies',
-      subtext: 'now',
+      text: '隧道数',
+      subtext: '现在',
       left: 'center',
     },
     tooltip: {
@@ -275,12 +275,12 @@ function DrawProxyTrafficChart(
     ],
     series: [
       {
-        name: 'Traffic In',
+        name: '流量(入)',
         type: 'bar',
         data: trafficInArr,
       },
       {
-        name: 'Traffic Out',
+        name: '流量(出)',
         type: 'bar',
         data: trafficOutArr,
       },
