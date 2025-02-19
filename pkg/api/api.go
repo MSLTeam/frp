@@ -108,14 +108,22 @@ type PxyMsg struct {
 	UserToken   string
 	ProxyName   string
 	RemotePort  int
+	Type        string
 }
 
 // TunnelCheck 校验隧道
 func (s ApiService) VerifyTunnel(pxyMsg PxyMsg) (retStr string, err error) {
+	remotePort := strconv.Itoa(pxyMsg.RemotePort)
+	if pxyMsg.Type == "http" {
+		remotePort = "80"
+	}
+	if pxyMsg.Type == "https" {
+		remotePort = "443"
+	}
 	api, _ := url.Parse(apiUrl + "/verifyTunnel?" +
 		"token=" + pxyMsg.ServerToken +
 		"&userToken=" + pxyMsg.UserToken + "&name=" + pxyMsg.ProxyName +
-		"&remotePort=" + strconv.Itoa(pxyMsg.RemotePort))
+		"&remotePort=" + remotePort)
 
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, api.String(), nil)

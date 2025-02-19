@@ -388,6 +388,7 @@ func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
 				UserToken:   ctl.loginMsg.User,
 				ProxyName:   strings.Split(pxyMsg.ProxyName, ".")[1],
 				RemotePort:  pxyMsg.RemotePort,
+				Type:        pxyMsg.ProxyType,
 			}
 
 			apiService := api.ApiService{}
@@ -557,6 +558,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		UserToken:   ctl.loginMsg.User,
 		ProxyName:   strings.Split(pxyMsg.ProxyName, ".")[1],
 		RemotePort:  pxyMsg.RemotePort,
+		Type:        pxyMsg.ProxyType,
 	}
 
 	apiService := api.ApiService{}
