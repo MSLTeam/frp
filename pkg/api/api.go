@@ -13,7 +13,7 @@ import (
 )
 
 // Based on LoCyanFrp Frp modification
-type ApiService struct {
+type Service struct {
 }
 
 var apiUrl = "https://user.mslmc.net/api/frp"
@@ -22,16 +22,15 @@ var tr = &http.Transport{
 }
 var ua = fmt.Sprintf("MSLFrp/1.0 (Frps)")
 
-// NewApiService LoCyanFrp API service
-func NewApiService() (s *ApiService, err error) {
-	return &ApiService{}, nil
+func MyAPIService() (s *Service, err error) {
+	return &Service{}, nil
 }
 
 // ProxyStartGetCfg 简单启动获取Cfg
-func (s ApiService) ProxyStartGetCfg(userToken string, proxyId int) (cfg string, err error) {
+func (s Service) ProxyStartGetCfg(userToken string, proxyID int) (cfg string, err error) {
 	api, _ := url.Parse(apiUrl + "/getTunnelConfig")
 	values := url.Values{}
-	values.Set("id", strconv.Itoa(proxyId))
+	values.Set("id", strconv.Itoa(proxyID))
 	values.Set("userToken", userToken)
 	// Encode 请求参数
 	api.RawQuery = values.Encode()
@@ -75,15 +74,15 @@ func (s ApiService) ProxyStartGetCfg(userToken string, proxyId int) (cfg string,
 }
 
 // SubmitRunId 提交runID至服务器
-func (s ApiService) SubmitRunId(apiToken string, nodeId int, pMsg *msg.NewProxy, runId string) (err error) {
+func (s Service) SubmitRunID(apiToken string, nodeID int, pMsg *msg.NewProxy, runID string) (err error) {
 	api, _ := url.Parse(apiUrl + "/server/run-id")
 	values := url.Values{}
 
 	name := strings.Split(pMsg.ProxyName, ".")[1]
 
-	values.Set("run_id", runId)
+	values.Set("run_id", runID)
 	values.Set("proxy_name", name)
-	values.Set("api_token", apiToken+"|"+strconv.Itoa(nodeId))
+	values.Set("api_token", apiToken+"|"+strconv.Itoa(nodeID))
 
 	client := &http.Client{Transport: tr}
 
@@ -112,7 +111,7 @@ type PxyMsg struct {
 }
 
 // TunnelCheck 校验隧道
-func (s ApiService) VerifyTunnel(pxyMsg PxyMsg) (retStr string, err error) {
+func (s Service) VerifyTunnel(pxyMsg PxyMsg) (retStr string, err error) {
 	remotePort := strconv.Itoa(pxyMsg.RemotePort)
 	if pxyMsg.Type == "http" {
 		remotePort = "80"
@@ -163,7 +162,7 @@ func (s ApiService) VerifyTunnel(pxyMsg PxyMsg) (retStr string, err error) {
 }
 
 // ProxyCheck 校验客户端代理
-func (s ApiService) ProxyCheck(frpToken string, pMsg *msg.NewProxy, apiToken string, nodeId int) (ok bool, err error) {
+func (s Service) ProxyCheck(frpToken string, pMsg *msg.NewProxy, apiToken string, nodeID int) (ok bool, err error) {
 	api, _ := url.Parse(apiUrl + "/server/proxy")
 	domains, err := json.Marshal(pMsg.CustomDomains)
 	if err != nil {
@@ -186,7 +185,7 @@ func (s ApiService) ProxyCheck(frpToken string, pMsg *msg.NewProxy, apiToken str
 
 	// API Basic
 	values.Set("frp_token", frpToken)
-	values.Set("api_token", apiToken+"|"+strconv.Itoa(nodeId))
+	values.Set("api_token", apiToken+"|"+strconv.Itoa(nodeID))
 
 	// Proxies basic info
 	values.Set("proxy_name", name)
@@ -258,7 +257,7 @@ func (s ApiService) ProxyCheck(frpToken string, pMsg *msg.NewProxy, apiToken str
 }
 
 // GetLimit 获取隧道限速信息
-func (s ApiService) GetLimit(frpsToken string, userToken string) (inLimit, outLimit uint64, err error) {
+func (s Service) GetLimit(frpsToken string, userToken string) (inLimit, outLimit uint64, err error) {
 	api, _ := url.Parse(apiUrl + "/getLimit")
 	values := url.Values{}
 	values.Set("token", frpsToken)

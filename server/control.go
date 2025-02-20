@@ -391,7 +391,7 @@ func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
 				Type:        pxyMsg.ProxyType,
 			}
 
-			apiService := api.ApiService{}
+			apiService := api.Service{}
 
 			retMsg, _err := apiService.VerifyTunnel(apiPxyMsg)
 			if _err != nil {
@@ -561,7 +561,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		Type:        pxyMsg.ProxyType,
 	}
 
-	apiService := api.ApiService{}
+	apiService := api.Service{}
 
 	retMsg, _err := apiService.VerifyTunnel(apiPxyMsg)
 	if _err != nil {

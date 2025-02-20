@@ -597,7 +597,7 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login, inter
 		outLimit uint64
 	)
 
-	s, err := api.NewApiService()
+	s, err := api.MyAPIService()
 	if err != nil {
 		return err
 	}

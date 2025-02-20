@@ -177,7 +177,6 @@ func (ctl *Control) handleNewProxyResp(m msg.Message) {
 				ctl.
 					xl.Infof(" 隧道已成功启动！\n远程连接地址：%s \n若上面地址无法连接，请使用该IP：%v", ctl.sessionCtx.RemoteDomain+inMsg.RemoteAddr, ctl.sessionCtx.Common.ServerAddr+inMsg.RemoteAddr)
 			}
-
 		}
 	}
 }

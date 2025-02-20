@@ -74,7 +74,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfgUser != "" && cfgTunnel > 0 {
-			s, _err := api.NewApiService()
+			s, _err := api.MyAPIService()
 			if _err != nil {
 				log.Warnf("Initialize API Service Failed, err: %s", _err)
 			}
@@ -93,16 +93,17 @@ var rootCmd = &cobra.Command{
 			log.Infof("To Get Config File from API...")
 
 			_, err := os.Stat("./frpConf")
-			if err == nil {
-			} else if os.IsNotExist(err) {
-				err := os.Mkdir("./frpConf", os.ModePerm)
-				if err != nil {
+			if err != nil {
+				if os.IsNotExist(err) {
+					err := os.Mkdir("./frpConf", os.ModePerm)
+					if err != nil {
+						fmt.Println("Make toml folder failed: " + err.Error())
+						os.Exit(1)
+					}
+				} else {
 					fmt.Println("Make toml folder failed: " + err.Error())
 					os.Exit(1)
 				}
-			} else {
-				fmt.Println("Make toml folder failed: " + err.Error())
-				os.Exit(1)
 			}
 
 			proxyID := cfgTunnel
