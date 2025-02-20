@@ -5,7 +5,7 @@
     inline
     class="proxy-table-expand"
   >
-    <el-form-item label="隧道名">
+    <el-form-item label="完整隧道名">
       <span>{{ row.name }}</span>
     </el-form-item>
     <el-form-item label="类型">
@@ -60,19 +60,18 @@
   </el-form>
 
   <div v-if="row.annotations && row.annotations.size > 0">
-  <el-divider />
-  <el-text class="title-text" size="large">Annotations</el-text>
-  <ul>
-    <li v-for="item in annotationsArray()">
-      <span class="annotation-key">{{ item.key }}</span>
-      <span>{{  item.value }}</span>
-    </li>
-  </ul>
+    <el-divider />
+    <el-text class="title-text" size="large">Annotations</el-text>
+    <ul>
+      <li v-for="item in annotationsArray()">
+        <span class="annotation-key">{{ item.key }}</span>
+        <span>{{ item.value }}</span>
+      </li>
+    </ul>
   </div>
 </template>
 
 <script setup lang="ts">
-
 const props = defineProps<{
   row: any
   proxyType: string
@@ -80,13 +79,13 @@ const props = defineProps<{
 
 // annotationsArray returns an array of key-value pairs from the annotations map.
 const annotationsArray = (): Array<{ key: string; value: string }> => {
-  const array: Array<{ key: string; value: any }> = [];
+  const array: Array<{ key: string; value: any }> = []
   if (props.row.annotations) {
     props.row.annotations.forEach((value: any, key: string) => {
-      array.push({ key, value });
-    });
+      array.push({ key, value })
+    })
   }
-  return array;
+  return array
 }
 </script>
 

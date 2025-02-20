@@ -1,19 +1,19 @@
 <template>
   <div class="container">
-    <el-card style="width: 100%; margin-left: 20px">
+    <el-card style="width: 100%; border-radius: 12px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
       <template #header>
-        <div style="display: flex; justify-content: space-between">
-          <h3 style="margin: 0">{{ proxyType }}</h3>
-          <div class="flex items-center" style="margin-right: 30px">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 600;">{{ proxyType }}</h3>
+          <div class="flex items-center">
             <el-popconfirm
               title="确定清除全部离线隧道?"
               @confirm="clearOfflineProxies"
             >
               <template #reference>
-                <el-button>清理离线隧道</el-button>
+                <el-button type="danger" plain>清理离线隧道</el-button>
               </template>
             </el-popconfirm>
-            <el-button @click="$emit('refresh')">刷新</el-button>
+            <el-button type="primary" @click="$emit('refresh')">刷新</el-button>
           </div>
         </div>
       </template>
@@ -21,7 +21,8 @@
         <el-table
           :data="proxies"
           :default-sort="{ prop: 'name', order: 'ascending' }"
-          style="width: 100%"
+          style="width: 100%; border-radius: 8px;"
+          stripe
         >
           <el-table-column type="expand">
             <template #default="props">
@@ -60,8 +61,8 @@
           <el-table-column label="状态" prop="status" sortable>
             <template #default="scope">
               <el-tag v-if="scope.row.status === 'online'" type="success">{{
-                  scope.row.status === 'online' ? '在线' : scope.row.status
-                }}</el-tag>
+                scope.row.status === 'online' ? '在线' : scope.row.status
+              }}</el-tag>
               <el-tag v-else type="danger">{{ scope.row.status === 'offline' ? '离线' : scope.row.status }}</el-tag>
             </template>
           </el-table-column>
@@ -70,7 +71,7 @@
               <el-button
                 type="primary"
                 :name="scope.row.name"
-                style="margin-bottom: 10px"
+                style="margin-bottom: 10px; border-radius: 6px;"
                 @click="dialogVisibleName = scope.row.name; dialogVisible = true"
               >流量统计
               </el-button>
@@ -83,7 +84,11 @@
         v-model="dialogVisible"
         destroy-on-close="true"
         :title="dialogVisibleName"
-        width="700px">
+        width="700px"
+        :modal="true"
+        :close-on-click-modal="false"
+        :close-on-press-escape="false"
+      >
         <Traffic :proxyName="dialogVisibleName" />
       </el-dialog>
     </el-card>
@@ -144,8 +149,21 @@ const clearOfflineProxies = () => {
 }
 </script>
 
-<style>
-.el-page-header__title {
-  font-size: 20px;
+<style scoped>
+.container {
+  padding: 20px;
 }
+
+.el-button {
+  border-radius: 6px;
+}
+
+.el-table {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.el-dialog {
+  border-radius: 12px;
+}
+
 </style>

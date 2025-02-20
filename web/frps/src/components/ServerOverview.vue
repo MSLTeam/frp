@@ -6,7 +6,11 @@
           <div class="server-info-header">
             <h3>服务器信息</h3>
           </div>
-          <el-form label-position="left" label-width="220px" class="server-info-form">
+          <el-form
+            label-position="left"
+            label-width="220px"
+            class="server-info-form"
+          >
             <el-form-item label="版本">
               <span class="info-value">{{ data.version }}</span>
             </el-form-item>
@@ -31,10 +35,7 @@
             >
               <span class="info-value">{{ data.tcpmuxHTTPConnectPort }}</span>
             </el-form-item>
-            <el-form-item
-              label="子域名"
-              v-if="data.subdomainHost != ''"
-            >
+            <el-form-item label="子域名" v-if="data.subdomainHost != ''">
               <LongSpan :content="data.subdomainHost" :length="30"></LongSpan>
             </el-form-item>
             <el-form-item label="最大连接池数量">
@@ -44,7 +45,7 @@
               <span class="info-value">{{ data.maxPortsPerClient }}</span>
             </el-form-item>
             <el-form-item label="允许的端口" v-if="data.allowPortsStr != ''">
-              <LongSpan :content="data.allowPortsStr" :length="30"></LongSpan>
+              <LongSpan class="info-value" :content="data.allowPortsStr" :length="30"></LongSpan>
             </el-form-item>
             <el-form-item label="强制TLS" v-if="data.tlsForce === true">
               <span class="info-value">{{ data.tlsForce }}</span>
@@ -186,11 +187,15 @@ fetchData()
 
 .info-value {
   font-weight: bold;
-  color: #409EFF;
+  color: #409eff;
 }
 
 .chart-container {
   width: 100%;
   height: 250px;
+}
+
+.el-card {
+  border-radius: 12px;
 }
 </style>
