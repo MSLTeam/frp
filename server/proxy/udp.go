@@ -29,7 +29,8 @@ import (
 	v1 "github.com/fatedier/frp/pkg/config/v1"
 	"github.com/fatedier/frp/pkg/msg"
 	"github.com/fatedier/frp/pkg/proto/udp"
-	"github.com/fatedier/frp/pkg/util/limit"
+
+	// "github.com/fatedier/frp/pkg/util/limit"
 	netpkg "github.com/fatedier/frp/pkg/util/net"
 	"github.com/fatedier/frp/server/metrics"
 )
@@ -216,11 +217,13 @@ func (pxy *UDPProxy) Run() (remoteAddr string, err error) {
 				rwc = libio.WithCompression(rwc)
 			}
 
-			if pxy.GetLimiter() != nil {
-				rwc = libio.WrapReadWriteCloser(limit.NewReader(rwc, pxy.GetLimiter()), limit.NewWriter(rwc, pxy.GetLimiter()), func() error {
-					return rwc.Close()
-				})
-			}
+			/*
+				if pxy.GetLimiter() != nil {
+					rwc = libio.WrapReadWriteCloser(limit.NewReader(rwc, pxy.GetLimiter()), limit.NewWriter(rwc, pxy.GetLimiter()), func() error {
+						return rwc.Close()
+					})
+				}
+			*/
 
 			pxy.workConn = netpkg.WrapReadWriteCloserToConn(rwc, workConn)
 			ctx, cancel := context.WithCancel(context.Background())
