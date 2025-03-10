@@ -39,3 +39,5 @@ client.key
 
 # Cache
 *.swp
+frps
+build_win_frpc.bat
