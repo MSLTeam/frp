@@ -384,11 +384,12 @@ func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
 		select {
 		case <-ticker.C:
 			apiPxyMsg := api.PxyMsg{
-				ServerToken: ctl.serverCfg.ServerToken,
-				UserToken:   ctl.loginMsg.User,
-				ProxyName:   strings.Split(pxyMsg.ProxyName, ".")[1],
-				RemotePort:  pxyMsg.RemotePort,
-				Type:        pxyMsg.ProxyType,
+				ServerToken:  ctl.serverCfg.ServerToken,
+				UserToken:    ctl.loginMsg.User,
+				ProxyName:    strings.Split(pxyMsg.ProxyName, ".")[1],
+				RemotePort:   pxyMsg.RemotePort,
+				Type:         pxyMsg.ProxyType,
+				CustomDomain: pxyMsg.CustomDomains,
 			}
 
 			apiService := api.Service{}
@@ -554,11 +555,12 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 	}
 
 	apiPxyMsg := api.PxyMsg{
-		ServerToken: ctl.serverCfg.ServerToken,
-		UserToken:   ctl.loginMsg.User,
-		ProxyName:   strings.Split(pxyMsg.ProxyName, ".")[1],
-		RemotePort:  pxyMsg.RemotePort,
-		Type:        pxyMsg.ProxyType,
+		ServerToken:  ctl.serverCfg.ServerToken,
+		UserToken:    ctl.loginMsg.User,
+		ProxyName:    strings.Split(pxyMsg.ProxyName, ".")[1],
+		RemotePort:   pxyMsg.RemotePort,
+		Type:         pxyMsg.ProxyType,
+		CustomDomain: pxyMsg.CustomDomains,
 	}
 
 	apiService := api.Service{}

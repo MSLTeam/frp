@@ -103,26 +103,33 @@ func (s Service) SubmitRunID(apiToken string, nodeID int, pMsg *msg.NewProxy, ru
 }
 
 type PxyMsg struct {
-	ServerToken string
-	UserToken   string
-	ProxyName   string
-	RemotePort  int
-	Type        string
+	ServerToken  string
+	UserToken    string
+	ProxyName    string
+	RemotePort   int
+	Type         string
+	CustomDomain []string
 }
 
 // TunnelCheck 校验隧道
 func (s Service) VerifyTunnel(pxyMsg PxyMsg) (retStr string, err error) {
-	remotePort := strconv.Itoa(pxyMsg.RemotePort)
-	if pxyMsg.Type == "http" {
-		remotePort = "80"
-	}
-	if pxyMsg.Type == "https" {
-		remotePort = "443"
-	}
-	api, _ := url.Parse(apiUrl + "/verifyTunnel?" +
+	urlStr := apiUrl + "/verifyTunnel?" +
 		"token=" + pxyMsg.ServerToken +
 		"&userToken=" + pxyMsg.UserToken + "&name=" + pxyMsg.ProxyName +
-		"&remotePort=" + remotePort)
+		"&remotePort=" + strconv.Itoa(pxyMsg.RemotePort)
+
+	if pxyMsg.Type == "http" {
+		urlStr = apiUrl + "/verifyTunnel?" +
+			"token=" + pxyMsg.ServerToken +
+			"&userToken=" + pxyMsg.UserToken + "&name=" + pxyMsg.ProxyName +
+			"&remotePort=80&bindDomain=" + strings.Join(pxyMsg.CustomDomain, "|")
+	} else if pxyMsg.Type == "https" {
+		urlStr = apiUrl + "/verifyTunnel?" +
+			"token=" + pxyMsg.ServerToken +
+			"&userToken=" + pxyMsg.UserToken + "&name=" + pxyMsg.ProxyName +
+			"&remotePort=443&bindDomain=" + strings.Join(pxyMsg.CustomDomain, "|")
+	}
+	api, _ := url.Parse(urlStr)
 
 	client := &http.Client{}
 	req, err := http.NewRequest(http.MethodGet, api.String(), nil)
