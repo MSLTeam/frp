@@ -34,25 +34,21 @@ const (
   <meta charset="UTF-8">
   <title>404 Not Found</title>
   <style>
-
-
-    /* 设置高斯模糊背景 */
     .blur-bg {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background-image: url("https://fastcdn.mihoyo.com/content-v2/hk4e/125133/b86e153b41b5106f287d7bcb0e801a14_1435745599367653211.jpg");
+      background-image: url("https://fastcdn.mihoyo.com/content-v2/hk4e/159347/d546a6006c42aebce823dc4922b05cd6_4956747493908915554.png");
       background-size: cover;
       background-repeat: no-repeat;
       background-position: center;
-      filter: blur(5px); /* 添加高斯模糊滤镜 */
-      -webkit-filter: blur(5px); /* Safari支持的高斯模糊滤镜 */
-      z-index: -1; /* 将背景置于最底层 */
+      filter: blur(5px); 
+      -webkit-filter: blur(5px); 
+      z-index: -1;
     }
 
-    /* 使页面居中 */
     .container {
       display: flex;
       flex-direction: column;
@@ -62,20 +58,17 @@ const (
       color: white;
     }
 
-    /* 设置标题样式 */
     h1 {
       font-size: 6rem;
       font-weight: bold;
       margin-bottom: 0;
     }
 
-    /* 设置提示信息样式 */
     p {
       font-size: 2rem;
       margin-top: 0;
     }
 
-    /* 设置返回首页按钮样式 */
     a {
       display: inline-block;
       background-color: white;
@@ -87,20 +80,18 @@ const (
       margin-top: 2rem;
     }
 
-    /* 设置页脚样式 */
     footer {
       position: fixed;
       bottom: 0;
       left: 0;
       width: 100%;
       height: 100px;
-      background-color: rgba(0, 0, 0, 0.5); /* 设置半透明的背景色 */
+      background-color: rgba(0, 0, 0, 0.5); 
       display: flex;
       justify-content: center;
       align-items: center;
     }
 
-    /* 设置页脚文字样式 */
     footer p {
       font-size: 1.5rem;
       color: white;
@@ -109,9 +100,9 @@ const (
   </style>
 </head>
 <body>
-    <div class="blur-bg"></div> <!-- 添加高斯模糊背景 -->
+    <div class="blur-bg"></div> 
     <div class="container">
-      <h1>404 Not Found - MSL-Frp</h1>
+      <h1>MSL-Frp</h1>
       <p>这里什么也没有哦~</p>
       <a href="https://user.mslmc.net">返回MSL用户中心</a>
     </div>
