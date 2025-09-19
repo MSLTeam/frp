@@ -5,7 +5,7 @@
       <div class="header-content">
         <router-link to="/" class="brand">
           <img src="/favicon.ico" alt="Logo" class="logo" />
-          <span class="title">MSL-FRP 节点控制台</span>
+          <span class="title">MSLFrp 节点监控</span>
         </router-link>
         <el-switch
           v-model="darkmodeSwitch"
