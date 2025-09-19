@@ -36,7 +36,7 @@
           </el-table-column>
           <el-table-column label="用户UID" sortable>
             <template #default="scope">
-              {{scope.row.name.split('.')[0].split('-')[1]}}
+              {{ Number(scope.row.name.split('.')[0].split('-')[1]) - 10000 }}
             </template>
           </el-table-column>
           <el-table-column label="远程端口" prop="port" sortable> </el-table-column>
