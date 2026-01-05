@@ -1,2 +1,2 @@
-go build -ldflags "-s -w" github.com/fatedier/frp/cmd/frpc
+go build -ldflags "-s -w" github.com/fatedier/frp/cmd/frps
 pause
