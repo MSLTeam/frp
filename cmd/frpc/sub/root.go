@@ -17,16 +17,17 @@ package sub
 import (
 	"context"
 	"fmt"
-	"github.com/fatedier/frp/pkg/api"
 	"io/fs"
 	"os"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/fatedier/frp/pkg/api"
 
 	"github.com/spf13/cobra"
 
@@ -90,7 +91,7 @@ var rootCmd = &cobra.Command{
 
 			_, dirErr := os.Stat("./frpConf/" + strconv.Itoa(cfgTunnel) + ".toml")
 			if cfgForceGet == false && dirErr == nil {
-				err := runClient("./frpConf/" + strconv.Itoa(cfgTunnel) + ".toml")
+				err := runClient("./frpConf/"+strconv.Itoa(cfgTunnel)+".toml", unsafeFeatures)
 				if err != nil {
 					fmt.Println(err)
 					fmt.Println("您在使用简易启动的时候出现了异常！可能是配置文件出现了改动，请删除对应配置文件或在启动指令后添加-f参数以强制重新获取隧道配置！")

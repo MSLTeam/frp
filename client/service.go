@@ -352,18 +352,13 @@ func (svr *Service) loopLoginUntilSuccess(maxInterval time.Duration, firstLoginE
 		connEncrypted := svr.clientSpec == nil || svr.clientSpec.Type != "ssh-tunnel"
 
 		sessionCtx := &SessionContext{
-			Common:        svr.common,
-			RunID:         svr.runID,
-			Conn:          conn,
-			RemoteDomain:  svr.remoteDomain,
-			ConnEncrypted: connEncrypted,
-			Connector:     connector,
 			Common:         svr.common,
 			RunID:          svr.runID,
 			Conn:           conn,
+			RemoteDomain:   svr.remoteDomain,
 			ConnEncrypted:  connEncrypted,
-			Auth:           svr.auth,
 			Connector:      connector,
+			Auth:           svr.auth,
 			VnetController: svr.vnetController,
 		}
 		ctl, err := NewControl(svr.ctx, sessionCtx)

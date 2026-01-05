@@ -17,8 +17,10 @@ package server
 import (
 	"context"
 	"fmt"
+
 	"github.com/fatedier/frp/pkg/api"
-	"github.com/fatedier/frp/pkg/limit"
+	"golang.org/x/time/rate"
+
 	"net"
 	"runtime/debug"
 	"strings"
@@ -200,11 +202,11 @@ type Control struct {
 	// Server configuration information
 	serverCfg *v1.ServerConfig
 
-	xl       *xlog.Logger
-	ctx      context.Context
-	inLimit  uint64
-	outLimit uint64
-	doneCh   chan struct{}
+	xl            *xlog.Logger
+	ctx           context.Context
+	inboundLimit  uint64
+	outboundLimit uint64
+	doneCh        chan struct{}
 }
 
 // TODO(fatedier): Referencing the implementation of frpc, encapsulate the input parameters as SessionContext.
@@ -219,8 +221,8 @@ func NewControl(
 	ctlConnEncrypted bool,
 	loginMsg *msg.Login,
 	serverCfg *v1.ServerConfig,
-	inLimit uint64,
-	outLimit uint64,
+	inboundLimit uint64,
+	outboundLimit uint64,
 ) (*Control, error) {
 	poolCount := loginMsg.PoolCount
 	if poolCount > int(serverCfg.Transport.MaxPoolCount) {
@@ -242,8 +244,8 @@ func NewControl(
 		serverCfg:     serverCfg,
 		xl:            xlog.FromContextSafe(ctx),
 		ctx:           ctx,
-		inLimit:       inLimit,  //rate.NewLimiter(rate.Limit(inLimit*limit.KB), int(inLimit*limit.KB)),
-		outLimit:      outLimit, //rate.NewLimiter(rate.Limit(outLimit*limit.KB), int(outLimit*limit.KB)),
+		inboundLimit:  inboundLimit,
+		outboundLimit: outboundLimit,
 		doneCh:        make(chan struct{}),
 	}
 	ctl.lastPing.Store(time.Now())
@@ -575,16 +577,11 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		return
 	}
 
-	var workConn proxy.GetWorkConnFn = ctl.GetWorkConn
-	workConn = func() (net.Conn, error) {
-		fconn, __err := ctl.GetWorkConn()
-		if __err != nil {
-			err = fmt.Errorf(__err.Error())
-			return nil, __err
-		}
-		//xl.Infof("client speed limit: %dKB/s (Inbound) / %dKB/s (Outbound)", ctl.inLimit, ctl.outLimit)
-		return limit.NewLimitConn(ctl.inLimit, ctl.outLimit, fconn), nil
-	}
+	const UnitToBytes = 1000000 / 8 / 128
+	limitRN := float64(ctl.inboundLimit) * UnitToBytes
+	limitWN := float64(ctl.outboundLimit) * UnitToBytes
+	lr := rate.NewLimiter(rate.Limit(limitRN), int(limitRN))
+	lw := rate.NewLimiter(rate.Limit(limitWN), int(limitWN))
 
 	// User info
 	userInfo := plugin.UserInfo{
@@ -600,11 +597,11 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		LoginMsg:           ctl.loginMsg,
 		PoolCount:          ctl.poolCount,
 		ResourceController: ctl.rc,
-		GetWorkConnFn:      workConn,
+		GetWorkConnFn:      ctl.GetWorkConn,
 		Configurer:         pxyConf,
 		ServerCfg:          ctl.serverCfg,
 		EncryptionKey:      ctl.encryptionKey,
-	})
+	}, lr, lw)
 	if err != nil {
 		return remoteAddr, err
 	}

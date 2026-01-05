@@ -17,7 +17,6 @@ package client
 import (
 	"context"
 	"net"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -174,13 +173,11 @@ func (ctl *Control) handleNewProxyResp(m msg.Message) {
 	} else {
 		xl.Infof("[%s] start proxy success", inMsg.ProxyName)
 		if ctl.sessionCtx.RemoteDomain != "" {
-			if strings.HasPrefix(inMsg.RemoteAddr, ":") {
-				ctl.
-					xl.Infof(" 隧道已成功启动！\n远程连接地址：%s ", inMsg.RemoteAddr)
-			} else {
-				ctl.
-					xl.Infof(" 隧道已成功启动！\n远程连接地址：%s \n若上面地址无法连接，请使用该IP：%v", ctl.sessionCtx.RemoteDomain+inMsg.RemoteAddr, ctl.sessionCtx.Common.ServerAddr+inMsg.RemoteAddr)
-			}
+			ctl.
+				xl.Infof(" 隧道已成功启动！\n远程连接地址：%s \n若上面地址无法连接，请使用该IP：%v", ctl.sessionCtx.RemoteDomain+inMsg.RemoteAddr, ctl.sessionCtx.Common.ServerAddr+inMsg.RemoteAddr)
+		} else {
+			ctl.
+				xl.Infof(" 隧道已成功启动！\n远程连接地址：%s ", ctl.sessionCtx.Common.ServerAddr+inMsg.RemoteAddr)
 		}
 	}
 }
