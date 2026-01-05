@@ -25,13 +25,13 @@ import (
 	"time"
 
 	libio "github.com/fatedier/golib/io"
-	// "golang.org/x/time/rate"
+	"golang.org/x/time/rate"
 
+	"github.com/fatedier/frp/pkg/config/types"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
 	"github.com/fatedier/frp/pkg/msg"
 	plugin "github.com/fatedier/frp/pkg/plugin/server"
-
-	// "github.com/fatedier/frp/pkg/util/limit"
+	"github.com/fatedier/frp/pkg/util/limit"
 	netpkg "github.com/fatedier/frp/pkg/util/net"
 	"github.com/fatedier/frp/pkg/util/xlog"
 	"github.com/fatedier/frp/server/controller"
@@ -55,7 +55,7 @@ type Proxy interface {
 	GetUsedPortsNum() int
 	GetResourceController() *controller.ResourceController
 	GetUserInfo() plugin.UserInfo
-	// GetLimiter() *rate.Limiter
+	GetLimiter() *rate.Limiter
 	GetLoginMsg() *msg.Login
 	Close()
 }
@@ -68,10 +68,10 @@ type BaseProxy struct {
 	poolCount     int
 	getWorkConnFn GetWorkConnFn
 	serverCfg     *v1.ServerConfig
-	// limiter       *rate.Limiter
-	userInfo   plugin.UserInfo
-	loginMsg   *msg.Login
-	configurer v1.ProxyConfigurer
+	limiter       *rate.Limiter
+	userInfo      plugin.UserInfo
+	loginMsg      *msg.Login
+	configurer    v1.ProxyConfigurer
 
 	mu  sync.RWMutex
 	xl  *xlog.Logger
@@ -102,11 +102,10 @@ func (pxy *BaseProxy) GetLoginMsg() *msg.Login {
 	return pxy.loginMsg
 }
 
-/*
-	func (pxy *BaseProxy) GetLimiter() *rate.Limiter {
-		return pxy.limiter
-	}
-*/
+func (pxy *BaseProxy) GetLimiter() *rate.Limiter {
+	return pxy.limiter
+}
+
 func (pxy *BaseProxy) GetConfigurer() v1.ProxyConfigurer {
 	return pxy.configurer
 }
@@ -202,7 +201,7 @@ func (pxy *BaseProxy) startCommonTCPListenersHandler() {
 					xl.Warnf("listener is closed: %s", err)
 					return
 				}
-				xl.Tracef("get a user connection [%s]", c.RemoteAddr().String())
+				xl.Infof("get a user connection [%s]", c.RemoteAddr().String())
 				go pxy.handleUserTCPConnection(c)
 			}
 		}(listener)
@@ -253,13 +252,11 @@ func (pxy *BaseProxy) handleUserTCPConnection(userConn net.Conn) {
 		defer recycleFn()
 	}
 
-	/*
-		if pxy.GetLimiter() != nil {
-			local = libio.WrapReadWriteCloser(limit.NewReader(local, pxy.GetLimiter()), limit.NewWriter(local, pxy.GetLimiter()), func() error {
-				return local.Close()
-			})
-		}
-	*/
+	if pxy.GetLimiter() != nil {
+		local = libio.WrapReadWriteCloser(limit.NewReader(local, pxy.GetLimiter()), limit.NewWriter(local, pxy.GetLimiter()), func() error {
+			return local.Close()
+		})
+	}
 
 	xl.Debugf("join connections, workConn(l[%s] r[%s]) userConn(l[%s] r[%s])", workConn.LocalAddr().String(),
 		workConn.RemoteAddr().String(), userConn.LocalAddr().String(), userConn.RemoteAddr().String())
@@ -288,13 +285,11 @@ func NewProxy(ctx context.Context, options *Options) (pxy Proxy, err error) {
 	configurer := options.Configurer
 	xl := xlog.FromContextSafe(ctx).Spawn().AppendPrefix(configurer.GetBaseConfig().Name)
 
-	/*
-		var limiter *rate.Limiter
-		limitBytes := configurer.GetBaseConfig().Transport.BandwidthLimit.Bytes()
-		if limitBytes > 0 && configurer.GetBaseConfig().Transport.BandwidthLimitMode == types.BandwidthLimitModeServer {
-			limiter = rate.NewLimiter(rate.Limit(float64(limitBytes)), int(limitBytes))
-		}
-	*/
+	var limiter *rate.Limiter
+	limitBytes := configurer.GetBaseConfig().Transport.BandwidthLimit.Bytes()
+	if limitBytes > 0 && configurer.GetBaseConfig().Transport.BandwidthLimitMode == types.BandwidthLimitModeServer {
+		limiter = rate.NewLimiter(rate.Limit(float64(limitBytes)), int(limitBytes))
+	}
 
 	basePxy := BaseProxy{
 		name:          configurer.GetBaseConfig().Name,
@@ -303,12 +298,12 @@ func NewProxy(ctx context.Context, options *Options) (pxy Proxy, err error) {
 		poolCount:     options.PoolCount,
 		getWorkConnFn: options.GetWorkConnFn,
 		serverCfg:     options.ServerCfg,
-		// limiter:       limiter,
-		xl:         xl,
-		ctx:        xlog.NewContext(ctx, xl),
-		userInfo:   options.UserInfo,
-		loginMsg:   options.LoginMsg,
-		configurer: configurer,
+		limiter:       limiter,
+		xl:            xl,
+		ctx:           xlog.NewContext(ctx, xl),
+		userInfo:      options.UserInfo,
+		loginMsg:      options.LoginMsg,
+		configurer:    configurer,
 	}
 
 	factory := proxyFactoryRegistry[reflect.TypeOf(configurer)]

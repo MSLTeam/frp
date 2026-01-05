@@ -162,7 +162,7 @@ func (rp *HTTPReverseProxy) UnRegister(routeCfg RouteConfig) {
 func (rp *HTTPReverseProxy) GetRouteConfig(domain, location, routeByHTTPUser string) *RouteConfig {
 	vr, ok := rp.getVhost(domain, location, routeByHTTPUser)
 	if ok {
-		log.Debugf("get new HTTP request host [%s] path [%s] httpuser [%s]", domain, location, routeByHTTPUser)
+		log.Debugf("get new http request host [%s] path [%s] httpuser [%s]", domain, location, routeByHTTPUser)
 		return vr.payload.(*RouteConfig)
 	}
 	return nil
@@ -225,11 +225,7 @@ func (rp *HTTPReverseProxy) getVhost(domain, location, routeByHTTPUser string) (
 	// *.example.com
 	// *.com
 	domainSplit := strings.Split(domain, ".")
-	for {
-		if len(domainSplit) < 3 {
-			break
-		}
-
+	for len(domainSplit) >= 3 {
 		domainSplit[0] = "*"
 		domain = strings.Join(domainSplit, ".")
 		vr, ok = findRouter(domain, location, routeByHTTPUser)

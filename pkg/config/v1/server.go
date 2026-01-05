@@ -100,8 +100,10 @@ type ServerConfig struct {
 	HTTPPlugins []HTTPPluginOptions `json:"httpPlugins,omitempty"`
 }
 
-func (c *ServerConfig) Complete() {
-	c.Auth.Complete()
+func (c *ServerConfig) Complete() error {
+	if err := c.Auth.Complete(); err != nil {
+		return err
+	}
 	c.Log.Complete()
 	c.Transport.Complete()
 	c.WebServer.Complete()
@@ -123,17 +125,20 @@ func (c *ServerConfig) Complete() {
 	c.UserConnTimeout = util.EmptyOr(c.UserConnTimeout, 10)
 	c.UDPPacketSize = util.EmptyOr(c.UDPPacketSize, 1500)
 	c.NatHoleAnalysisDataReserveHours = util.EmptyOr(c.NatHoleAnalysisDataReserveHours, 7*24)
+	return nil
 }
 
 type AuthServerConfig struct {
 	Method           AuthMethod           `json:"method,omitempty"`
 	AdditionalScopes []AuthScope          `json:"additionalScopes,omitempty"`
 	Token            string               `json:"token,omitempty"`
+	TokenSource      *ValueSource         `json:"tokenSource,omitempty"`
 	OIDC             AuthOIDCServerConfig `json:"oidc,omitempty"`
 }
 
-func (c *AuthServerConfig) Complete() {
+func (c *AuthServerConfig) Complete() error {
 	c.Method = util.EmptyOr(c.Method, "token")
+	return nil
 }
 
 type AuthOIDCServerConfig struct {

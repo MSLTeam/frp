@@ -169,11 +169,7 @@ func (v *Muxer) getListener(name, path, httpUser string) (*Listener, bool) {
 	}
 
 	domainSplit := strings.Split(name, ".")
-	for {
-		if len(domainSplit) < 3 {
-			break
-		}
-
+	for len(domainSplit) >= 3 {
 		domainSplit[0] = "*"
 		name = strings.Join(domainSplit, ".")
 
@@ -275,7 +271,7 @@ func (l *Listener) Accept() (net.Conn, error) {
 	xl := xlog.FromContextSafe(l.ctx)
 	conn, ok := <-l.accept
 	if !ok {
-		return nil, fmt.Errorf("Listener closed")
+		return nil, fmt.Errorf("listener closed")
 	}
 
 	// if rewriteHost func is exist

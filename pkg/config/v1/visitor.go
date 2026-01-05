@@ -32,8 +32,11 @@ type VisitorTransport struct {
 }
 
 type VisitorBaseConfig struct {
-	Name      string           `json:"name"`
-	Type      string           `json:"type"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+	// Enabled controls whether this visitor is enabled. nil or true means enabled, false means disabled.
+	// This allows individual control over each visitor, complementing the global "start" field.
+	Enabled   *bool            `json:"enabled,omitempty"`
 	Transport VisitorTransport `json:"transport,omitempty"`
 	SecretKey string           `json:"secretKey,omitempty"`
 	// if the server user is not set, it defaults to the current user
@@ -44,6 +47,9 @@ type VisitorBaseConfig struct {
 	// It can be less than 0, it means don't bind to the port and only receive connections redirected from
 	// other visitors. (This is not supported for SUDP now)
 	BindPort int `json:"bindPort,omitempty"`
+
+	// Plugin specifies what plugin should be used.
+	Plugin TypedVisitorPluginOptions `json:"plugin,omitempty"`
 }
 
 func (c *VisitorBaseConfig) GetBaseConfig() *VisitorBaseConfig {
@@ -157,6 +163,9 @@ type XTCPVisitorConfig struct {
 	MinRetryInterval  int    `json:"minRetryInterval,omitempty"`
 	FallbackTo        string `json:"fallbackTo,omitempty"`
 	FallbackTimeoutMs int    `json:"fallbackTimeoutMs,omitempty"`
+
+	// NatTraversal configuration for NAT traversal
+	NatTraversal *NatTraversalConfig `json:"natTraversal,omitempty"`
 }
 
 func (c *XTCPVisitorConfig) Complete(g *ClientCommonConfig) {

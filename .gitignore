@@ -41,3 +41,6 @@ client.key
 *.swp
 frps
 build_win_frpc.bat
+
+# AI
+CLAUDE.md

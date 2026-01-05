@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"strconv"
 	"sync"
 	"syscall"
@@ -33,6 +34,8 @@ import (
 	"github.com/fatedier/frp/pkg/config"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
 	"github.com/fatedier/frp/pkg/config/v1/validation"
+	"github.com/fatedier/frp/pkg/policy/featuregate"
+	"github.com/fatedier/frp/pkg/policy/security"
 	"github.com/fatedier/frp/pkg/util/log"
 	"github.com/fatedier/frp/pkg/util/version"
 )
@@ -45,6 +48,7 @@ var (
 	cfgDir           string
 	showVersion      bool
 	strictConfigMode bool
+	allowUnsafe      []string
 )
 
 func init() {
@@ -55,6 +59,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgDir, "config_dir", "", "", "config directory, run one frpc service for each file in config directory")
 	rootCmd.PersistentFlags().BoolVarP(&showVersion, "version", "v", false, "version of frpc")
 	rootCmd.PersistentFlags().BoolVarP(&strictConfigMode, "strict_config", "", true, "strict config parsing mode, unknown fields will cause an errors")
+
+	rootCmd.PersistentFlags().StringSliceVarP(&allowUnsafe, "allow-unsafe", "", []string{},
+		fmt.Sprintf("allowed unsafe features, one or more of: %s", strings.Join(security.ClientUnsafeFeatures, ", ")))
 }
 
 var rootCmd = &cobra.Command{
@@ -66,10 +73,12 @@ var rootCmd = &cobra.Command{
 			return nil
 		}
 
+		unsafeFeatures := security.NewUnsafeFeatures(allowUnsafe)
+
 		// If cfgDir is not empty, run multiple frpc service for each config file in cfgDir.
 		// Note that it's only designed for testing. It's not guaranteed to be stable.
 		if cfgDir != "" {
-			_ = runMultipleClients(cfgDir)
+			_ = runMultipleClients(cfgDir, unsafeFeatures)
 			return nil
 		}
 
@@ -136,7 +145,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Do not show command usage here.
-		err := runClient(cfgFile)
+		err := runClient(cfgFile, unsafeFeatures)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -145,7 +154,7 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func runMultipleClients(cfgDir string) error {
+func runMultipleClients(cfgDir string, unsafeFeatures *security.UnsafeFeatures) error {
 	var wg sync.WaitGroup
 	err := filepath.WalkDir(cfgDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {
@@ -155,7 +164,7 @@ func runMultipleClients(cfgDir string) error {
 		time.Sleep(time.Millisecond)
 		go func() {
 			defer wg.Done()
-			err := runClient(path)
+			err := runClient(path, unsafeFeatures)
 			if err != nil {
 				fmt.Printf("frpc service error for config file [%s]\n", path)
 			}
@@ -180,7 +189,7 @@ func handleTermSignal(svr *client.Service) {
 	svr.GracefulClose(500 * time.Millisecond)
 }
 
-func runClient(cfgFilePath string) error {
+func runClient(cfgFilePath string, unsafeFeatures *security.UnsafeFeatures) error {
 	cfg, proxyCfgs, visitorCfgs, isLegacyFormat, err := config.LoadClientConfig(cfgFilePath, strictConfigMode)
 	if err != nil {
 		return err
@@ -190,20 +199,28 @@ func runClient(cfgFilePath string) error {
 			"please use yaml/json/toml format instead!\n")
 	}
 
-	warning, err := validation.ValidateAllClientConfig(cfg, proxyCfgs, visitorCfgs)
+	if len(cfg.FeatureGates) > 0 {
+		if err := featuregate.SetFromMap(cfg.FeatureGates); err != nil {
+			return err
+		}
+	}
+
+	warning, err := validation.ValidateAllClientConfig(cfg, proxyCfgs, visitorCfgs, unsafeFeatures)
 	if warning != nil {
 		fmt.Printf("WARNING: %v\n", warning)
 	}
 	if err != nil {
 		return err
 	}
-	return startService(cfg, proxyCfgs, visitorCfgs, cfgFilePath)
+
+	return startService(cfg, proxyCfgs, visitorCfgs, unsafeFeatures, cfgFilePath)
 }
 
 func startService(
 	cfg *v1.ClientCommonConfig,
 	proxyCfgs []v1.ProxyConfigurer,
 	visitorCfgs []v1.VisitorConfigurer,
+	unsafeFeatures *security.UnsafeFeatures,
 	cfgFile string,
 ) error {
 	log.InitLogger(cfg.Log.To, cfg.Log.Level, int(cfg.Log.MaxDays), cfg.Log.DisablePrintColor)
@@ -216,6 +233,7 @@ func startService(
 		Common:         cfg,
 		ProxyCfgs:      proxyCfgs,
 		VisitorCfgs:    visitorCfgs,
+		UnsafeFeatures: unsafeFeatures,
 		ConfigFilePath: cfgFile,
 	})
 	if err != nil {

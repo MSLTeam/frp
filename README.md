@@ -16,21 +16,46 @@ frp is an open source project with its ongoing development made possible entirel
 <p align="center">
   <a href="https://jb.gg/frp" target="_blank">
     <img width="420px" src="https://raw.githubusercontent.com/fatedier/frp/dev/doc/pic/sponsor_jetbrains.jpg">
+	<br>
+	<b>The complete IDE crafted for professional Go developers</b>
   </a>
 </p>
-<p align="center">
-  <a href="https://workos.com/?utm_campaign=github_repo&utm_medium=referral&utm_content=frp&utm_source=github" target="_blank">
-    <img width="420px" src="https://raw.githubusercontent.com/fatedier/frp/dev/doc/pic/sponsor_workos.png">
-  </a>
-</p>
-<p align="center">
-  <a href="https://github.com/daytonaio/daytona" target="_blank">
-    <img width="420px" src="https://raw.githubusercontent.com/fatedier/frp/dev/doc/pic/sponsor_daytona.png">
-  </a>
-</p>
+
 <p align="center">
   <a href="https://github.com/beclab/Olares" target="_blank">
     <img width="420px" src="https://raw.githubusercontent.com/fatedier/frp/dev/doc/pic/sponsor_olares.jpeg">
+	<br>
+	<b>The sovereign cloud that puts you in control</b>
+	<br>
+	<sub>An open source, self-hosted alternative to public clouds, built for data ownership and privacy</sub>
+  </a>
+</p>
+
+<div align="center">
+
+## Recall.ai - API for meeting recordings
+
+If you're looking for a meeting recording API, consider checking out [Recall.ai](https://www.recall.ai/?utm_source=github&utm_medium=sponsorship&utm_campaign=fatedier-frp),
+
+an API that records Zoom, Google Meet, Microsoft Teams, in-person meetings, and more.
+
+</div>
+<p align="center">
+  <a href="https://requestly.com/?utm_source=github&utm_medium=partnered&utm_campaign=frp" target="_blank">
+    <img width="480px" src="https://github.com/user-attachments/assets/24670320-997d-4d62-9bca-955c59fe883d">
+    <br>
+    <b>Requestly - Free & Open-Source alternative to Postman</b>
+    <br>
+    <sub>All-in-one platform to Test, Mock and Intercept APIs.</sub>
+  </a>
+</p>
+<p align="center">
+  <a href="https://go.warp.dev/frp" target="_blank">
+    <img width="360px" src="https://raw.githubusercontent.com/warpdotdev/brand-assets/refs/heads/main/Github/Sponsor/Warp-Github-LG-01.png">
+    <br>
+    <b>Warp, built for collaborating with AI Agents</b>
+    <br>
+	<sub>Available for macOS, Linux and Windows</sub>
   </a>
 </p>
 <!--gold sponsors end-->
@@ -97,6 +122,11 @@ frp also offers a P2P connect mode.
     * [Client Plugins](#client-plugins)
     * [Server Manage Plugins](#server-manage-plugins)
     * [SSH Tunnel Gateway](#ssh-tunnel-gateway)
+    * [Virtual Network (VirtualNet)](#virtual-network-virtualnet)
+* [Feature Gates](#feature-gates)
+    * [Available Feature Gates](#available-feature-gates)
+    * [Enabling Feature Gates](#enabling-feature-gates)
+    * [Feature Lifecycle](#feature-lifecycle)
 * [Related Projects](#related-projects)
 * [Contributing](#contributing)
 * [Donation](#donation)
@@ -502,7 +532,7 @@ name = "ssh"
 type = "tcp"
 localIP = "127.0.0.1"
 localPort = 22
-remotePort = "{{ .Envs.FRP_SSH_REMOTE_PORT }}"
+remotePort = {{ .Envs.FRP_SSH_REMOTE_PORT }}
 ```
 
 With the config above, variables can be passed into `frpc` program like this:
@@ -611,6 +641,21 @@ Configuring `auth.additionalScopes = ["NewWorkConns"]` will do the same for ever
 When specifying `auth.method = "token"` in `frpc.toml` and `frps.toml` - token based authentication will be used.
 
 Make sure to specify the same `auth.token` in `frps.toml` and `frpc.toml` for frpc to pass frps validation
+
+##### Token Source
+
+frp supports reading authentication tokens from external sources using the `tokenSource` configuration. Currently, file-based token source is supported.
+
+**File-based token source:**
+
+```toml
+# frpc.toml
+auth.method = "token"
+auth.tokenSource.type = "file"
+auth.tokenSource.file.path = "/path/to/token/file"
+```
+
+The token will be read from the specified file at startup. This is useful for scenarios where tokens are managed by external systems or need to be kept separate from configuration files for security reasons.
 
 #### OIDC Authentication
 
@@ -1025,7 +1070,7 @@ You can get user's real IP from HTTP request headers `X-Forwarded-For`.
 
 #### Proxy Protocol
 
-frp supports Proxy Protocol to send user's real IP to local services. It support all types except UDP.
+frp supports Proxy Protocol to send user's real IP to local services.
 
 Here is an example for https service:
 
@@ -1259,6 +1304,39 @@ frpc tcp --proxy_name "test-tcp" --local_ip 127.0.0.1 --local_port 8080 --remote
 ```
 
 Please refer to this [document](/doc/ssh_tunnel_gateway.md) for more information.
+
+### Virtual Network (VirtualNet)
+
+*Alpha feature added in v0.62.0*
+
+The VirtualNet feature enables frp to create and manage virtual network connections between clients and visitors through a TUN interface. This allows for IP-level routing between machines, extending frp beyond simple port forwarding to support full network connectivity.
+
+For detailed information about configuration and usage, please refer to the [VirtualNet documentation](/doc/virtual_net.md).
+
+## Feature Gates
+
+frp supports feature gates to enable or disable experimental features. This allows users to try out new features before they're considered stable.
+
+### Available Feature Gates
+
+| Name | Stage | Default | Description |
+|------|-------|---------|-------------|
+| VirtualNet | ALPHA | false | Virtual network capabilities for frp |
+
+### Enabling Feature Gates
+
+To enable an experimental feature, add the feature gate to your configuration:
+
+```toml
+featureGates = { VirtualNet = true }
+```
+
+### Feature Lifecycle
+
+Features typically go through three stages:
+1. **ALPHA**: Disabled by default, may be unstable
+2. **BETA**: May be enabled by default, more stable but still evolving
+3. **GA (Generally Available)**: Enabled by default, ready for production use
 
 ## Related Projects
 

@@ -20,13 +20,11 @@ import (
 	"net"
 	"reflect"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	libio "github.com/fatedier/golib/io"
 	libnet "github.com/fatedier/golib/net"
-	pp "github.com/pires/go-proxyproto"
 	"golang.org/x/time/rate"
 
 	"github.com/fatedier/frp/pkg/config/types"
@@ -35,7 +33,9 @@ import (
 	plugin "github.com/fatedier/frp/pkg/plugin/client"
 	"github.com/fatedier/frp/pkg/transport"
 	"github.com/fatedier/frp/pkg/util/limit"
+	netpkg "github.com/fatedier/frp/pkg/util/net"
 	"github.com/fatedier/frp/pkg/util/xlog"
+	"github.com/fatedier/frp/pkg/vnet"
 )
 
 var proxyFactoryRegistry = map[reflect.Type]func(*BaseProxy, v1.ProxyConfigurer) Proxy{}
@@ -57,7 +57,9 @@ func NewProxy(
 	ctx context.Context,
 	pxyConf v1.ProxyConfigurer,
 	clientCfg *v1.ClientCommonConfig,
+	encryptionKey []byte,
 	msgTransporter transport.MessageTransporter,
+	vnetController *vnet.Controller,
 ) (pxy Proxy) {
 	var limiter *rate.Limiter
 	limitBytes := pxyConf.GetBaseConfig().Transport.BandwidthLimit.Bytes()
@@ -68,8 +70,10 @@ func NewProxy(
 	baseProxy := BaseProxy{
 		baseCfg:        pxyConf.GetBaseConfig(),
 		clientCfg:      clientCfg,
+		encryptionKey:  encryptionKey,
 		limiter:        limiter,
 		msgTransporter: msgTransporter,
+		vnetController: vnetController,
 		xl:             xlog.FromContextSafe(ctx),
 		ctx:            ctx,
 	}
@@ -84,7 +88,9 @@ func NewProxy(
 type BaseProxy struct {
 	baseCfg        *v1.ProxyBaseConfig
 	clientCfg      *v1.ClientCommonConfig
+	encryptionKey  []byte
 	msgTransporter transport.MessageTransporter
+	vnetController *vnet.Controller
 	limiter        *rate.Limiter
 	// proxyPlugin is used to handle connections instead of dialing to local service.
 	// It's only validate for TCP protocol now.
@@ -98,7 +104,10 @@ type BaseProxy struct {
 
 func (pxy *BaseProxy) Run() error {
 	if pxy.baseCfg.Plugin.Type != "" {
-		p, err := plugin.Create(pxy.baseCfg.Plugin.Type, pxy.baseCfg.Plugin.ClientPluginOptions)
+		p, err := plugin.Create(pxy.baseCfg.Plugin.Type, plugin.PluginContext{
+			Name:           pxy.baseCfg.Name,
+			VnetController: pxy.vnetController,
+		}, pxy.baseCfg.Plugin.ClientPluginOptions)
 		if err != nil {
 			return err
 		}
@@ -123,7 +132,7 @@ func (pxy *BaseProxy) InWorkConn(conn net.Conn, m *msg.StartWorkConn) {
 			return
 		}
 	}
-	pxy.HandleTCPWorkConnection(conn, m, []byte(pxy.clientCfg.Auth.Token))
+	pxy.HandleTCPWorkConnection(conn, m, pxy.encryptionKey)
 }
 
 // Common handler for tcp work connections.
@@ -157,42 +166,29 @@ func (pxy *BaseProxy) HandleTCPWorkConnection(workConn net.Conn, m *msg.StartWor
 	}
 
 	// check if we need to send proxy protocol info
-	var extraInfo plugin.ExtraInfo
+	var connInfo plugin.ConnectionInfo
 	if m.SrcAddr != "" && m.SrcPort != 0 {
 		if m.DstAddr == "" {
 			m.DstAddr = "127.0.0.1"
 		}
 		srcAddr, _ := net.ResolveTCPAddr("tcp", net.JoinHostPort(m.SrcAddr, strconv.Itoa(int(m.SrcPort))))
 		dstAddr, _ := net.ResolveTCPAddr("tcp", net.JoinHostPort(m.DstAddr, strconv.Itoa(int(m.DstPort))))
-		extraInfo.SrcAddr = srcAddr
-		extraInfo.DstAddr = dstAddr
+		connInfo.SrcAddr = srcAddr
+		connInfo.DstAddr = dstAddr
 	}
 
 	if baseCfg.Transport.ProxyProtocolVersion != "" && m.SrcAddr != "" && m.SrcPort != 0 {
-		h := &pp.Header{
-			Command:         pp.PROXY,
-			SourceAddr:      extraInfo.SrcAddr,
-			DestinationAddr: extraInfo.DstAddr,
-		}
-
-		if strings.Contains(m.SrcAddr, ".") {
-			h.TransportProtocol = pp.TCPv4
-		} else {
-			h.TransportProtocol = pp.TCPv6
-		}
-
-		if baseCfg.Transport.ProxyProtocolVersion == "v1" {
-			h.Version = 1
-		} else if baseCfg.Transport.ProxyProtocolVersion == "v2" {
-			h.Version = 2
-		}
-		extraInfo.ProxyProtocolHeader = h
+		// Use the common proxy protocol builder function
+		header := netpkg.BuildProxyProtocolHeaderStruct(connInfo.SrcAddr, connInfo.DstAddr, baseCfg.Transport.ProxyProtocolVersion)
+		connInfo.ProxyProtocolHeader = header
 	}
+	connInfo.Conn = remote
+	connInfo.UnderlyingConn = workConn
 
 	if pxy.proxyPlugin != nil {
 		// if plugin is set, let plugin handle connection first
 		xl.Debugf("handle by plugin: %s", pxy.proxyPlugin.Name())
-		pxy.proxyPlugin.Handle(pxy.ctx, remote, workConn, &extraInfo)
+		pxy.proxyPlugin.Handle(pxy.ctx, &connInfo)
 		xl.Debugf("handle by plugin finished")
 		return
 	}
@@ -210,8 +206,8 @@ func (pxy *BaseProxy) HandleTCPWorkConnection(workConn net.Conn, m *msg.StartWor
 	xl.Debugf("join connections, localConn(l[%s] r[%s]) workConn(l[%s] r[%s])", localConn.LocalAddr().String(),
 		localConn.RemoteAddr().String(), workConn.LocalAddr().String(), workConn.RemoteAddr().String())
 
-	if extraInfo.ProxyProtocolHeader != nil {
-		if _, err := extraInfo.ProxyProtocolHeader.WriteTo(localConn); err != nil {
+	if connInfo.ProxyProtocolHeader != nil {
+		if _, err := connInfo.ProxyProtocolHeader.WriteTo(localConn); err != nil {
 			workConn.Close()
 			xl.Errorf("write proxy protocol header to local conn error: %v", err)
 			return
