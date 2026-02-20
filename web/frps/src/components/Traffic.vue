@@ -1,5 +1,5 @@
 <template>
-  <div :id="proxyName" style="width: 600px; height: 400px"></div>
+  <div class="traffic-chart" :id="proxyName"></div>
 </template>
 
 <script setup lang="ts">
@@ -11,7 +11,7 @@ const props = defineProps<{
 }>()
 
 const fetchData = () => {
-  let url = '../api/traffic/' + props.proxyName
+  const url = '../api/traffic/' + props.proxyName
   fetch(url, { credentials: 'include' })
     .then((res) => {
       return res.json()
@@ -29,4 +29,16 @@ const fetchData = () => {
 }
 fetchData()
 </script>
-<style></style>
+
+<style scoped>
+.traffic-chart {
+  width: 100%;
+  min-height: 320px;
+}
+
+@media (max-width: 900px) {
+  .traffic-chart {
+    min-height: 260px;
+  }
+}
+</style>

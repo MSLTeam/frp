@@ -50,6 +50,7 @@ import (
 	"github.com/fatedier/frp/pkg/util/xlog"
 	"github.com/fatedier/frp/server/controller"
 	"github.com/fatedier/frp/server/group"
+	"github.com/fatedier/frp/server/inspect"
 	"github.com/fatedier/frp/server/metrics"
 	"github.com/fatedier/frp/server/ports"
 	"github.com/fatedier/frp/server/proxy"
@@ -154,15 +155,20 @@ func NewService(cfg *v1.ServerConfig) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	openGFWInspector, err := inspect.NewOpenGFW(cfg.OpenGFW)
+	if err != nil {
+		return nil, fmt.Errorf("init openGFW failed: %w", err)
+	}
 
 	svr := &Service{
 		ctlManager:    NewControlManager(),
 		pxyManager:    proxy.NewManager(),
 		pluginManager: plugin.NewManager(),
 		rc: &controller.ResourceController{
-			VisitorManager: visitor.NewManager(),
-			TCPPortManager: ports.NewManager("tcp", cfg.ProxyBindAddr, cfg.AllowPorts),
-			UDPPortManager: ports.NewManager("udp", cfg.ProxyBindAddr, cfg.AllowPorts),
+			VisitorManager:   visitor.NewManager(),
+			TCPPortManager:   ports.NewManager("tcp", cfg.ProxyBindAddr, cfg.AllowPorts),
+			UDPPortManager:   ports.NewManager("udp", cfg.ProxyBindAddr, cfg.AllowPorts),
+			OpenGFWInspector: openGFWInspector,
 		},
 		sshTunnelListener: netpkg.NewInternalListener(),
 		httpVhostRouter:   vhost.NewRouters(),

@@ -39,6 +39,7 @@ require (
 
 require (
 	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
+	github.com/apernet/OpenGFW v0.0.0
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -82,3 +83,5 @@ require (
 
 // TODO(fatedier): Temporary use the modified version, update to the official version after merging into the official repository.
 replace github.com/hashicorp/yamux => github.com/fatedier/yamux v0.0.0-20250825093530-d0154be01cd6
+
+replace github.com/apernet/OpenGFW => github.com/MSLTeam/OpenGFW-For-FRP-integration- v0.3.3-0.20260220144109-18f0f4196824

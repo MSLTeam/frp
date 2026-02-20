@@ -24,7 +24,7 @@
       <span>{{ row.lastCloseTime }}</span>
     </el-form-item>
 
-    <div v-if="proxyType === 'http' || proxyType === 'https'">
+    <div v-if="proxyType === 'http' || proxyType === 'https'" class="expand-group">
       <el-form-item label="域名列表">
         <span>{{ row.customDomains }}</span>
       </el-form-item>
@@ -38,7 +38,8 @@
         <span>{{ row.hostHeaderRewrite }}</span>
       </el-form-item>
     </div>
-    <div v-else-if="proxyType === 'tcpmux'">
+
+    <div v-else-if="proxyType === 'tcpmux'" class="expand-group">
       <el-form-item label="多路复用">
         <span>{{ row.multiplexer }}</span>
       </el-form-item>
@@ -52,20 +53,21 @@
         <span>{{ row.subdomain }}</span>
       </el-form-item>
     </div>
-    <div v-else>
+
+    <div v-else class="expand-group">
       <el-form-item label="连接地址">
         <span>{{ row.addr }}</span>
       </el-form-item>
     </div>
   </el-form>
 
-  <div v-if="row.annotations && row.annotations.size > 0">
+  <div v-if="row.annotations && row.annotations.size > 0" class="annotations-wrap">
     <el-divider />
     <el-text class="title-text" size="large">Annotations</el-text>
     <ul>
-      <li v-for="item in annotationsArray()">
+      <li v-for="item in annotationsArray()" :key="item.key">
         <span class="annotation-key">{{ item.key }}</span>
-        <span>{{ item.value }}</span>
+        <span class="annotation-value">{{ item.value }}</span>
       </li>
     </ul>
   </div>
@@ -77,7 +79,6 @@ const props = defineProps<{
   proxyType: string
 }>()
 
-// annotationsArray returns an array of key-value pairs from the annotations map.
 const annotationsArray = (): Array<{ key: string; value: string }> => {
   const array: Array<{ key: string; value: any }> = []
   if (props.row.annotations) {
@@ -89,24 +90,50 @@ const annotationsArray = (): Array<{ key: string; value: string }> => {
 }
 </script>
 
-<style>
+<style scoped>
+.expand-group {
+  display: contents;
+}
+
+.annotations-wrap {
+  margin-top: 6px;
+}
+
 ul {
   list-style-type: none;
-  padding: 5px;
+  padding: 0;
+  margin: 8px 0 0;
 }
 
 ul li {
-  justify-content: space-between;
-  padding: 5px;
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) 1fr;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--frp-border);
+  background: var(--frp-surface-bg);
+  margin-bottom: 8px;
 }
 
-ul .annotation-key {
-  width: 300px;
-  display: inline-block;
-  vertical-align: middle;
+.annotation-key {
+  font-weight: 700;
+  color: var(--frp-muted);
+  overflow-wrap: anywhere;
+}
+
+.annotation-value {
+  overflow-wrap: anywhere;
 }
 
 .title-text {
-  color: #99a9bf;
+  color: var(--frp-muted);
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  ul li {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

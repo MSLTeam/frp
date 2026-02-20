@@ -1,3 +1,43 @@
 html.dark {
-  background-color: #242424;
+  --frp-card-bg: rgba(15, 23, 42, 0.82);
+  --frp-surface-bg: rgba(15, 23, 42, 0.68);
+  --frp-border: rgba(148, 163, 184, 0.24);
+  --frp-shadow: 0 10px 24px rgba(2, 6, 23, 0.42);
+  --frp-shadow-soft: 0 4px 14px rgba(2, 6, 23, 0.28);
+  --frp-ink: #e5e7eb;
+  --frp-muted: #94a3b8;
+}
+
+html.dark body {
+  background: #0b1220;
+  color: var(--frp-ink);
+}
+
+html.dark .el-card__header {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(17, 24, 39, 0.75));
+}
+
+html.dark .el-table th.el-table__cell {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.86));
+  color: #dbeafe;
+}
+
+html.dark .el-table tr:hover > td.el-table__cell {
+  background: rgba(14, 165, 233, 0.14);
+}
+
+html.dark .el-table .el-table__expanded-cell {
+  background: rgba(30, 41, 59, 0.68);
+}
+
+html.dark .el-dialog__header {
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.9), rgba(17, 24, 39, 0.78));
+}
+
+html.dark .el-form-item__label {
+  color: #94a3b8;
+}
+
+html.dark .mobile-drawer .el-drawer {
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
 }

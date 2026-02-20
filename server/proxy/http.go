@@ -184,6 +184,10 @@ func (pxy *HTTPProxy) GetRealConn(remoteAddr string) (workConn net.Conn, err err
 	*/
 
 	workConn = netpkg.WrapReadWriteCloserToConn(rwc, tmpConn)
+	if inspector := pxy.rc.OpenGFWInspector; inspector != nil && inspector.Enabled() {
+		sessionID := inspector.NewTCPSessionID(pxy.GetName())
+		workConn = inspector.WrapTCPConn(workConn, sessionID, rAddr, workConn.LocalAddr(), true)
+	}
 	workConn = netpkg.WrapStatsConn(workConn, pxy.updateStatsAfterClosedConn)
 	metrics.Server.OpenConnection(pxy.GetName(), pxy.GetConfigurer().GetBaseConfig().Type)
 	return

@@ -217,7 +217,6 @@ func (pxy *BaseProxy) startCommonTCPListenersHandler() {
 // HandleUserTCPConnection is used for incoming user TCP connections.
 func (pxy *BaseProxy) handleUserTCPConnection(userConn net.Conn) {
 	xl := xlog.FromContextSafe(pxy.Context())
-	defer userConn.Close()
 
 	cfg := pxy.configurer.GetBaseConfig()
 	// server plugin hook
@@ -263,13 +262,20 @@ func (pxy *BaseProxy) handleUserTCPConnection(userConn net.Conn) {
 		})
 	}
 
+	joinedUserConn := userConn
+	if inspector := pxy.rc.OpenGFWInspector; inspector != nil && inspector.Enabled() {
+		sessionID := inspector.NewTCPSessionID(pxy.GetName())
+		joinedUserConn = inspector.WrapTCPConn(userConn, sessionID, userConn.RemoteAddr(), userConn.LocalAddr(), false)
+	}
+	defer joinedUserConn.Close()
+
 	xl.Debugf("join connections, workConn(l[%s] r[%s]) userConn(l[%s] r[%s])", workConn.LocalAddr().String(),
 		workConn.RemoteAddr().String(), userConn.LocalAddr().String(), userConn.RemoteAddr().String())
 
 	name := pxy.GetName()
 	proxyType := cfg.Type
 	metrics.Server.OpenConnection(name, proxyType)
-	inCount, outCount, _ := libio.Join(local, userConn)
+	inCount, outCount, _ := libio.Join(local, joinedUserConn)
 	metrics.Server.CloseConnection(name, proxyType)
 	metrics.Server.AddTrafficIn(name, proxyType, inCount)
 	metrics.Server.AddTrafficOut(name, proxyType, outCount)

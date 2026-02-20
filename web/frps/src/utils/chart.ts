@@ -22,39 +22,93 @@ echarts.use([
   GridComponent,
 ])
 
+const isDark = () => document.documentElement.classList.contains('dark')
+
+const getThemeTokens = () => {
+  if (isDark()) {
+    return {
+      title: '#e2e8f0',
+      subTitle: '#94a3b8',
+      axisText: '#cbd5e1',
+      splitLine: 'rgba(148, 163, 184, 0.2)',
+      tooltipBg: 'rgba(15, 23, 42, 0.92)',
+      palette: ['#38bdf8', '#2dd4bf', '#fbbf24', '#f87171', '#a78bfa', '#22c55e'],
+      barIn: '#38bdf8',
+      barOut: '#2dd4bf',
+    }
+  }
+
+  return {
+    title: '#0f172a',
+    subTitle: '#475569',
+    axisText: '#334155',
+    splitLine: 'rgba(51, 65, 85, 0.14)',
+    tooltipBg: 'rgba(15, 23, 42, 0.9)',
+    palette: ['#0ea5e9', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6', '#22c55e'],
+    barIn: '#0ea5e9',
+    barOut: '#14b8a6',
+  }
+}
+
+const initChart = (elementId: string) => {
+  const element = document.getElementById(elementId) as HTMLElement | null
+  if (!element) {
+    return null
+  }
+
+  const existing = echarts.getInstanceByDom(element)
+  if (existing) {
+    existing.dispose()
+  }
+  return echarts.init(element)
+}
+
 function DrawTrafficChart(
   elementId: string,
   trafficIn: number,
   trafficOut: number
 ) {
-  const myChart = echarts.init(
-    document.getElementById(elementId) as HTMLElement,
-    'macarons'
-  )
-  myChart.showLoading()
+  const chart = initChart(elementId)
+  if (!chart) {
+    return
+  }
+  const tokens = getThemeTokens()
 
-  const option = {
+  chart.showLoading()
+
+  chart.setOption({
+    color: tokens.palette,
     title: {
       text: '网络流量',
-      subtext: '今日',
+      subtext: '今日统计',
       left: 'center',
+      textStyle: { color: tokens.title, fontWeight: 700 },
+      subtextStyle: { color: tokens.subTitle },
     },
     tooltip: {
       trigger: 'item',
+      backgroundColor: tokens.tooltipBg,
+      borderWidth: 0,
+      textStyle: { color: '#f8fafc' },
       formatter: function (v: any) {
         return Humanize.fileSize(v.data.value) + ' (' + v.percent + '%)'
       },
     },
     legend: {
-      orient: 'vertical',
-      left: 'left',
+      orient: 'horizontal',
+      bottom: 4,
+      textStyle: { color: tokens.axisText },
       data: ['流量(入)', '流量(出)'],
     },
     series: [
       {
         type: 'pie',
-        radius: '55%',
-        center: ['50%', '60%'],
+        radius: ['45%', '70%'],
+        center: ['50%', '50%'],
+        padAngle: 2,
+        itemStyle: {
+          borderRadius: 8,
+        },
         data: [
           {
             value: trafficIn,
@@ -67,151 +121,151 @@ function DrawTrafficChart(
         ],
         emphasis: {
           itemStyle: {
-            shadowBlur: 10,
+            shadowBlur: 14,
             shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.5)',
+            shadowColor: 'rgba(2, 6, 23, 0.35)',
           },
         },
       },
     ],
-  }
-  myChart.setOption(option)
-  myChart.hideLoading()
+  })
+
+  chart.hideLoading()
 }
 
 function DrawProxyChart(elementId: string, serverInfo: any) {
-  const myChart = echarts.init(
-    document.getElementById(elementId) as HTMLElement,
-    'macarons'
-  )
-  myChart.showLoading()
+  const chart = initChart(elementId)
+  if (!chart) {
+    return
+  }
+  const tokens = getThemeTokens()
+
+  chart.showLoading()
 
   const option = {
+    color: tokens.palette,
     title: {
-      text: '隧道数',
-      subtext: '现在',
+      text: '隧道分布',
+      subtext: '按类型',
       left: 'center',
+      textStyle: { color: tokens.title, fontWeight: 700 },
+      subtextStyle: { color: tokens.subTitle },
     },
     tooltip: {
       trigger: 'item',
+      backgroundColor: tokens.tooltipBg,
+      borderWidth: 0,
+      textStyle: { color: '#f8fafc' },
       formatter: function (v: any) {
         return String(v.data.value)
       },
     },
     legend: {
-      orient: 'vertical',
-      left: 'left',
+      orient: 'horizontal',
+      bottom: 4,
+      textStyle: { color: tokens.axisText },
       data: <string[]>[],
     },
     series: [
       {
         type: 'pie',
-        radius: '55%',
-        center: ['50%', '60%'],
+        radius: ['42%', '68%'],
+        center: ['50%', '50%'],
+        padAngle: 2,
+        itemStyle: { borderRadius: 8 },
         data: <any[]>[],
-        emphasis: {
-          itemStyle: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.5)',
-          },
-        },
       },
     ],
   }
+  const proxyTypeCount = serverInfo?.proxyTypeCount || {}
 
   if (
-    serverInfo.proxyTypeCount.tcp != null &&
-    serverInfo.proxyTypeCount.tcp != 0
+    proxyTypeCount.tcp != null &&
+    proxyTypeCount.tcp !== 0
   ) {
     option.series[0].data.push({
-      value: serverInfo.proxyTypeCount.tcp,
+      value: proxyTypeCount.tcp,
       name: 'TCP',
     })
     option.legend.data.push('TCP')
   }
   if (
-    serverInfo.proxyTypeCount.udp != null &&
-    serverInfo.proxyTypeCount.udp != 0
+    proxyTypeCount.udp != null &&
+    proxyTypeCount.udp !== 0
   ) {
     option.series[0].data.push({
-      value: serverInfo.proxyTypeCount.udp,
+      value: proxyTypeCount.udp,
       name: 'UDP',
     })
     option.legend.data.push('UDP')
   }
   if (
-    serverInfo.proxyTypeCount.http != null &&
-    serverInfo.proxyTypeCount.http != 0
+    proxyTypeCount.http != null &&
+    proxyTypeCount.http !== 0
   ) {
     option.series[0].data.push({
-      value: serverInfo.proxyTypeCount.http,
+      value: proxyTypeCount.http,
       name: 'HTTP',
     })
     option.legend.data.push('HTTP')
   }
   if (
-    serverInfo.proxyTypeCount.https != null &&
-    serverInfo.proxyTypeCount.https != 0
+    proxyTypeCount.https != null &&
+    proxyTypeCount.https !== 0
   ) {
     option.series[0].data.push({
-      value: serverInfo.proxyTypeCount.https,
+      value: proxyTypeCount.https,
       name: 'HTTPS',
     })
     option.legend.data.push('HTTPS')
   }
   if (
-    serverInfo.proxyTypeCount.stcp != null &&
-    serverInfo.proxyTypeCount.stcp != 0
+    proxyTypeCount.stcp != null &&
+    proxyTypeCount.stcp !== 0
   ) {
     option.series[0].data.push({
-      value: serverInfo.proxyTypeCount.stcp,
+      value: proxyTypeCount.stcp,
       name: 'STCP',
     })
     option.legend.data.push('STCP')
   }
   if (
-    serverInfo.proxyTypeCount.sudp != null &&
-    serverInfo.proxyTypeCount.sudp != 0
+    proxyTypeCount.sudp != null &&
+    proxyTypeCount.sudp !== 0
   ) {
     option.series[0].data.push({
-      value: serverInfo.proxyTypeCount.sudp,
+      value: proxyTypeCount.sudp,
       name: 'SUDP',
     })
     option.legend.data.push('SUDP')
   }
   if (
-    serverInfo.proxyTypeCount.xtcp != null &&
-    serverInfo.proxyTypeCount.xtcp != 0
+    proxyTypeCount.xtcp != null &&
+    proxyTypeCount.xtcp !== 0
   ) {
     option.series[0].data.push({
-      value: serverInfo.proxyTypeCount.xtcp,
+      value: proxyTypeCount.xtcp,
       name: 'XTCP',
     })
     option.legend.data.push('XTCP')
   }
 
-  myChart.setOption(option)
-  myChart.hideLoading()
+  chart.setOption(option)
+  chart.hideLoading()
 }
 
-// 7 days
 function DrawProxyTrafficChart(
   elementId: string,
   trafficInArr: number[],
   trafficOutArr: number[]
 ) {
-  const params = {
-    width: '600px',
-    height: '400px',
+  const chart = initChart(elementId)
+  if (!chart) {
+    return
   }
+  const tokens = getThemeTokens()
 
-  const myChart = echarts.init(
-    document.getElementById(elementId) as HTMLElement,
-    'macarons',
-    params
-  )
-  myChart.showLoading()
+  chart.showLoading()
 
   trafficInArr = trafficInArr.reverse()
   trafficOutArr = trafficOutArr.reverse()
@@ -225,12 +279,16 @@ function DrawProxyTrafficChart(
     now = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
   }
 
-  const option = {
+  chart.setOption({
+    color: [tokens.barIn, tokens.barOut],
     tooltip: {
       trigger: 'axis',
       axisPointer: {
         type: 'shadow',
       },
+      backgroundColor: tokens.tooltipBg,
+      borderWidth: 0,
+      textStyle: { color: '#f8fafc' },
       formatter: function (data: any) {
         let html = ''
         if (data.length > 0) {
@@ -250,25 +308,41 @@ function DrawProxyTrafficChart(
     },
     legend: {
       data: ['流量(入)', '流量(出)'],
+      textStyle: { color: tokens.axisText },
     },
     grid: {
       left: '3%',
-      right: '4%',
+      right: '3%',
       bottom: '3%',
+      top: '16%',
       containLabel: true,
     },
     xAxis: [
       {
         type: 'category',
         data: dates,
+        axisLabel: {
+          color: tokens.axisText,
+        },
+        axisLine: {
+          lineStyle: {
+            color: tokens.splitLine,
+          },
+        },
       },
     ],
     yAxis: [
       {
         type: 'value',
         axisLabel: {
+          color: tokens.axisText,
           formatter: function (value: number) {
             return Humanize.fileSize(value)
+          },
+        },
+        splitLine: {
+          lineStyle: {
+            color: tokens.splitLine,
           },
         },
       },
@@ -277,17 +351,25 @@ function DrawProxyTrafficChart(
       {
         name: '流量(入)',
         type: 'bar',
+        barWidth: '34%',
+        itemStyle: {
+          borderRadius: [8, 8, 0, 0],
+        },
         data: trafficInArr,
       },
       {
         name: '流量(出)',
         type: 'bar',
+        barWidth: '34%',
+        itemStyle: {
+          borderRadius: [8, 8, 0, 0],
+        },
         data: trafficOutArr,
       },
     ],
-  }
-  myChart.setOption(option)
-  myChart.hideLoading()
+  })
+
+  chart.hideLoading()
 }
 
 export { DrawTrafficChart, DrawProxyChart, DrawProxyTrafficChart }

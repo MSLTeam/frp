@@ -1,1 +1,2 @@
 bindPort = 7000
+openGFW.enable = true

@@ -20,6 +20,7 @@ import (
 	"github.com/fatedier/frp/pkg/util/tcpmux"
 	"github.com/fatedier/frp/pkg/util/vhost"
 	"github.com/fatedier/frp/server/group"
+	"github.com/fatedier/frp/server/inspect"
 	"github.com/fatedier/frp/server/ports"
 	"github.com/fatedier/frp/server/visitor"
 )
@@ -61,6 +62,9 @@ type ResourceController struct {
 
 	// All server manager plugin
 	PluginManager *plugin.Manager
+
+	// Shared OpenGFW inspector for proxy traffic.
+	OpenGFWInspector *inspect.OpenGFW
 }
 
 func (rc *ResourceController) Close() error {

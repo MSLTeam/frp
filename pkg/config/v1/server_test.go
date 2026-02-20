@@ -30,6 +30,12 @@ func TestServerConfigComplete(t *testing.T) {
 	require.EqualValues("token", c.Auth.Method)
 	require.Equal(true, lo.FromPtr(c.Transport.TCPMux))
 	require.Equal(true, lo.FromPtr(c.DetailedErrorsToClient))
+	require.Equal(true, lo.FromPtr(c.OpenGFW.Enable))
+	require.Equal(true, lo.FromPtr(c.OpenGFW.ProxyPolicy.Enable))
+	require.Equal(85, c.OpenGFW.ProxyPolicy.HighThreshold)
+	require.Equal(70, c.OpenGFW.ProxyPolicy.MediumThreshold)
+	require.Equal(true, lo.FromPtr(c.OpenGFW.TrafficPolicy.Enable))
+	require.Equal(true, lo.FromPtr(c.OpenGFW.TrafficPolicy.BlockWebTCP))
 }
 
 func TestAuthServerConfig_Complete(t *testing.T) {
@@ -38,4 +44,29 @@ func TestAuthServerConfig_Complete(t *testing.T) {
 	err := cfg.Complete()
 	require.NoError(err)
 	require.EqualValues("token", cfg.Method)
+}
+
+func TestOpenGFWConfigComplete(t *testing.T) {
+	require := require.New(t)
+
+	cfg := OpenGFWServerConfig{
+		Enable: lo.ToPtr(false),
+		ProxyPolicy: OpenGFWProxyPolicyConfig{
+			Enable:          lo.ToPtr(false),
+			HighThreshold:   50,
+			MediumThreshold: 70,
+		},
+		TrafficPolicy: OpenGFWTrafficPolicyConfig{
+			Enable:      lo.ToPtr(false),
+			BlockWebTCP: lo.ToPtr(false),
+		},
+	}
+	cfg.Complete()
+
+	require.Equal(false, lo.FromPtr(cfg.Enable))
+	require.Equal(false, lo.FromPtr(cfg.ProxyPolicy.Enable))
+	require.Equal(50, cfg.ProxyPolicy.HighThreshold)
+	require.Equal(49, cfg.ProxyPolicy.MediumThreshold)
+	require.Equal(false, lo.FromPtr(cfg.TrafficPolicy.Enable))
+	require.Equal(false, lo.FromPtr(cfg.TrafficPolicy.BlockWebTCP))
 }

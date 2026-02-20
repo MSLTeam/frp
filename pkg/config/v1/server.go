@@ -97,6 +97,8 @@ type ServerConfig struct {
 
 	AllowPorts []types.PortsRange `json:"allowPorts,omitempty"`
 
+	OpenGFW OpenGFWServerConfig `json:"openGFW,omitempty"`
+
 	HTTPPlugins []HTTPPluginOptions `json:"httpPlugins,omitempty"`
 }
 
@@ -108,6 +110,7 @@ func (c *ServerConfig) Complete() error {
 	c.Transport.Complete()
 	c.WebServer.Complete()
 	c.SSHTunnelGateway.Complete()
+	c.OpenGFW.Complete()
 
 	c.ServerToken = util.EmptyOr(c.ServerToken, "1")
 	c.BindAddr = util.EmptyOr(c.BindAddr, "0.0.0.0")
@@ -126,6 +129,56 @@ func (c *ServerConfig) Complete() error {
 	c.UDPPacketSize = util.EmptyOr(c.UDPPacketSize, 1500)
 	c.NatHoleAnalysisDataReserveHours = util.EmptyOr(c.NatHoleAnalysisDataReserveHours, 7*24)
 	return nil
+}
+
+type OpenGFWServerConfig struct {
+	Enable *bool `json:"enable,omitempty"`
+
+	ProxyFeatureFile   string `json:"proxyFeatureFile,omitempty"`
+	TrafficFeatureFile string `json:"trafficFeatureFile,omitempty"`
+
+	ProxyPolicy   OpenGFWProxyPolicyConfig   `json:"proxyPolicy,omitempty"`
+	TrafficPolicy OpenGFWTrafficPolicyConfig `json:"trafficPolicy,omitempty"`
+}
+
+func (c *OpenGFWServerConfig) Complete() {
+	c.Enable = util.EmptyOr(c.Enable, lo.ToPtr(true))
+	c.ProxyPolicy.Complete()
+	c.TrafficPolicy.Complete()
+}
+
+type OpenGFWProxyPolicyConfig struct {
+	Enable *bool `json:"enable,omitempty"`
+
+	HighThreshold   int `json:"highThreshold,omitempty"`
+	MediumThreshold int `json:"mediumThreshold,omitempty"`
+}
+
+func (c *OpenGFWProxyPolicyConfig) Complete() {
+	c.Enable = util.EmptyOr(c.Enable, lo.ToPtr(true))
+	if c.HighThreshold <= 0 || c.HighThreshold > 100 {
+		c.HighThreshold = 85
+	}
+	if c.MediumThreshold <= 0 || c.MediumThreshold >= c.HighThreshold {
+		c.MediumThreshold = 70
+		if c.MediumThreshold >= c.HighThreshold {
+			c.MediumThreshold = c.HighThreshold - 1
+		}
+		if c.MediumThreshold <= 0 {
+			c.MediumThreshold = 1
+		}
+	}
+}
+
+type OpenGFWTrafficPolicyConfig struct {
+	Enable *bool `json:"enable,omitempty"`
+
+	BlockWebTCP *bool `json:"blockWebTCP,omitempty"`
+}
+
+func (c *OpenGFWTrafficPolicyConfig) Complete() {
+	c.Enable = util.EmptyOr(c.Enable, lo.ToPtr(true))
+	c.BlockWebTCP = util.EmptyOr(c.BlockWebTCP, lo.ToPtr(true))
 }
 
 type AuthServerConfig struct {

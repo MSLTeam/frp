@@ -21,6 +21,7 @@ import (
 	"net"
 	"reflect"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/fatedier/golib/errors"
@@ -60,6 +61,9 @@ type UDPProxy struct {
 
 	// checkCloseCh is used for watching if workConn is closed
 	checkCloseCh chan int
+
+	udpSessionMu  sync.Mutex
+	udpSessionIDs map[string]struct{}
 
 	isClosed bool
 }
@@ -107,6 +111,22 @@ func (pxy *UDPProxy) Run() (remoteAddr string, err error) {
 	pxy.sendCh = make(chan *msg.UDPPacket, 1024)
 	pxy.readCh = make(chan *msg.UDPPacket, 1024)
 	pxy.checkCloseCh = make(chan int)
+	pxy.udpSessionIDs = make(map[string]struct{})
+	localAddr, _ := udpConn.LocalAddr().(*net.UDPAddr)
+
+	inspectUDPPacket := func(udpMsg *msg.UDPPacket, rev bool) bool {
+		inspector := pxy.rc.OpenGFWInspector
+		if inspector == nil || !inspector.Enabled() || udpMsg == nil || udpMsg.RemoteAddr == nil || localAddr == nil {
+			return false
+		}
+		payload, err := udp.GetContent(udpMsg)
+		if err != nil || len(payload) == 0 {
+			return false
+		}
+		sessionID := inspector.NewUDPSessionID(pxy.GetName(), udpMsg.RemoteAddr, localAddr)
+		pxy.trackUDPSession(sessionID)
+		return inspector.InspectUDP(sessionID, udpMsg.RemoteAddr, localAddr, rev, payload)
+	}
 
 	// read message from workConn, if it returns any error, notify proxy to start a new workConn
 	workConnReaderFn := func(conn net.Conn) {
@@ -137,6 +157,9 @@ func (pxy *UDPProxy) Run() (remoteAddr string, err error) {
 				continue
 			case *msg.UDPPacket:
 				if errRet := errors.PanicToError(func() {
+					if inspectUDPPacket(m, true) {
+						return
+					}
 					xl.Tracef("get udp message from workConn: %s", m.Content)
 					pxy.readCh <- m
 					metrics.Server.AddTrafficOut(
@@ -162,6 +185,9 @@ func (pxy *UDPProxy) Run() (remoteAddr string, err error) {
 				if !ok {
 					xl.Infof("sender goroutine for udp work connection closed")
 					return
+				}
+				if inspectUDPPacket(udpMsg, false) {
+					continue
 				}
 				if errRet = msg.WriteMsg(conn, udpMsg); errRet != nil {
 					xl.Infof("sender goroutine for udp work connection closed: %v", errRet)
@@ -255,6 +281,7 @@ func (pxy *UDPProxy) Close() {
 		pxy.isClosed = true
 
 		pxy.BaseProxy.Close()
+		pxy.closeTrackedUDPSessions()
 		if pxy.workConn != nil {
 			pxy.workConn.Close()
 		}
@@ -266,4 +293,30 @@ func (pxy *UDPProxy) Close() {
 		close(pxy.sendCh)
 	}
 	pxy.rc.UDPPortManager.Release(pxy.realBindPort)
+}
+
+func (pxy *UDPProxy) trackUDPSession(sessionID string) {
+	if sessionID == "" {
+		return
+	}
+	pxy.udpSessionMu.Lock()
+	pxy.udpSessionIDs[sessionID] = struct{}{}
+	pxy.udpSessionMu.Unlock()
+}
+
+func (pxy *UDPProxy) closeTrackedUDPSessions() {
+	inspector := pxy.rc.OpenGFWInspector
+	if inspector == nil || !inspector.Enabled() {
+		return
+	}
+	pxy.udpSessionMu.Lock()
+	sessionIDs := make([]string, 0, len(pxy.udpSessionIDs))
+	for sessionID := range pxy.udpSessionIDs {
+		sessionIDs = append(sessionIDs, sessionID)
+	}
+	pxy.udpSessionIDs = make(map[string]struct{})
+	pxy.udpSessionMu.Unlock()
+	for _, sessionID := range sessionIDs {
+		inspector.CloseUDPSession(sessionID)
+	}
 }
