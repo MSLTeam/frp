@@ -84,4 +84,4 @@ require (
 // TODO(fatedier): Temporary use the modified version, update to the official version after merging into the official repository.
 replace github.com/hashicorp/yamux => github.com/fatedier/yamux v0.0.0-20250825093530-d0154be01cd6
 
-replace github.com/apernet/OpenGFW => github.com/MSLTeam/OpenGFW-For-FRP-integration- v0.3.3-0.20260220144109-18f0f4196824
+replace github.com/apernet/OpenGFW => github.com/MSLTeam/OpenGFW-For-FRP-integration- monitor
