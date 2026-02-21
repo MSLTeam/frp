@@ -17,10 +17,6 @@ package server
 import (
 	"context"
 	"fmt"
-
-	"github.com/fatedier/frp/pkg/api"
-	"golang.org/x/time/rate"
-
 	"net"
 	"runtime/debug"
 	"strings"
@@ -29,7 +25,9 @@ import (
 	"time"
 
 	"github.com/samber/lo"
+	"golang.org/x/time/rate"
 
+	"github.com/fatedier/frp/pkg/api"
 	"github.com/fatedier/frp/pkg/auth"
 	"github.com/fatedier/frp/pkg/config"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
@@ -573,7 +571,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 
 	retMsg, _err := apiService.VerifyTunnel(apiPxyMsg)
 	if _err != nil {
-		err = fmt.Errorf(retMsg)
+		err = fmt.Errorf("%s", retMsg)
 		return
 	}
 

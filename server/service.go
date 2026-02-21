@@ -25,13 +25,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/fatedier/frp/pkg/api"
 	"github.com/fatedier/golib/crypto"
 	"github.com/fatedier/golib/net/mux"
 	fmux "github.com/hashicorp/yamux"
 	quic "github.com/quic-go/quic-go"
 	"github.com/samber/lo"
 
+	"github.com/fatedier/frp/pkg/api"
 	"github.com/fatedier/frp/pkg/auth"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
 	modelmetrics "github.com/fatedier/frp/pkg/metrics"
@@ -618,7 +618,7 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login, inter
 
 	inLimit, outLimit, err = s.GetLimit(svr.cfg.ServerToken, loginMsg.User)
 	if err != nil {
-		return fmt.Errorf(err.Error())
+		return err
 	}
 	xl.Infof("%s client speed limit: %dKB/s (Inbound) / %dKB/s (Outbound)", loginMsg.User, inLimit, outLimit)
 

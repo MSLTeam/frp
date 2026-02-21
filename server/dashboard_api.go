@@ -438,9 +438,6 @@ func (svr *Service) closeProxies(w http.ResponseWriter, r *http.Request) {
 		res.Code = 404
 		res.Msg = "User not found or no active sessions."
 	}
-
-	return
-
 }
 
 func (svr *Service) closeProxy(w http.ResponseWriter, r *http.Request) {
@@ -471,5 +468,4 @@ func (svr *Service) closeProxy(w http.ResponseWriter, r *http.Request) {
 	log.Warnf("not found: %s", user+"."+name)
 	res.Code = 404
 	res.Msg = "not found"
-	return
 }

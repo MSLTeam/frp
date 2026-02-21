@@ -27,11 +27,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fatedier/frp/pkg/api"
-
 	"github.com/spf13/cobra"
 
 	"github.com/fatedier/frp/client"
+	"github.com/fatedier/frp/pkg/api"
 	"github.com/fatedier/frp/pkg/config"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
 	"github.com/fatedier/frp/pkg/config/v1/validation"
@@ -90,7 +89,7 @@ var rootCmd = &cobra.Command{
 			}
 
 			_, dirErr := os.Stat("./frpConf/" + strconv.Itoa(cfgTunnel) + ".toml")
-			if cfgForceGet == false && dirErr == nil {
+			if !cfgForceGet && dirErr == nil {
 				err := runClient("./frpConf/"+strconv.Itoa(cfgTunnel)+".toml", unsafeFeatures)
 				if err != nil {
 					fmt.Println(err)

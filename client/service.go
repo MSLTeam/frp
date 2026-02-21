@@ -284,7 +284,7 @@ func (svr *Service) login() (conn net.Conn, connector Connector, err error) {
 	if svr.common.Metadatas["mslFrpRemoteDomain"] != "" {
 		svr.remoteDomain = svr.common.Metadatas["mslFrpRemoteDomain"]
 		delete(svr.common.Metadatas, "mslFrpRemoteDomain")
-		//xl.Infof(svr.remoteDomain + svr.common.Metadatas["mslFrpRemoteDomain"])
+		// xl.Infof(svr.remoteDomain + svr.common.Metadatas["mslFrpRemoteDomain"])
 	}
 
 	loginMsg := &msg.Login{

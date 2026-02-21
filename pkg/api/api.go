@@ -3,24 +3,26 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/fatedier/frp/pkg/msg"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/fatedier/frp/pkg/msg"
 )
 
 // Based on LoCyanFrp Frp modification
-type Service struct {
-}
+type Service struct{}
 
-var apiUrl = "https://user.mslmc.net/api/frp"
-var tr = &http.Transport{
-	DisableKeepAlives: true,
-}
-var ua = fmt.Sprintf("MSLFrp/1.0 (Frps)")
+var (
+	apiURL        = "https://user.mslmc.net/api/frp"
+	httpTransport = &http.Transport{
+		DisableKeepAlives: true,
+	}
+)
+
+const userAgent = "MSLFrp/1.0 (Frps)"
 
 func MyAPIService() (s *Service, err error) {
 	return &Service{}, nil
@@ -28,7 +30,7 @@ func MyAPIService() (s *Service, err error) {
 
 // ProxyStartGetCfg 简单启动获取Cfg
 func (s Service) ProxyStartGetCfg(userToken string, proxyID int) (cfg string, err error) {
-	api, _ := url.Parse(apiUrl + "/getTunnelConfig")
+	api, _ := url.Parse(apiURL + "/getTunnelConfig")
 	values := url.Values{}
 	values.Set("id", strconv.Itoa(proxyID))
 	values.Set("userToken", userToken)
@@ -38,13 +40,13 @@ func (s Service) ProxyStartGetCfg(userToken string, proxyID int) (cfg string, er
 		u.RawQuery = ""
 	}(api)
 
-	client := &http.Client{Transport: tr}
+	client := &http.Client{Transport: httpTransport}
 
 	req, err := http.NewRequest(http.MethodGet, api.String(), nil)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", ua)
+	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -75,7 +77,7 @@ func (s Service) ProxyStartGetCfg(userToken string, proxyID int) (cfg string, er
 
 // SubmitRunId 提交runID至服务器
 func (s Service) SubmitRunID(apiToken string, nodeID int, pMsg *msg.NewProxy, runID string) (err error) {
-	api, _ := url.Parse(apiUrl + "/server/run-id")
+	api, _ := url.Parse(apiURL + "/server/run-id")
 	values := url.Values{}
 
 	name := strings.Split(pMsg.ProxyName, ".")[1]
@@ -84,13 +86,13 @@ func (s Service) SubmitRunID(apiToken string, nodeID int, pMsg *msg.NewProxy, ru
 	values.Set("proxy_name", name)
 	values.Set("api_token", apiToken+"|"+strconv.Itoa(nodeID))
 
-	client := &http.Client{Transport: tr}
+	client := &http.Client{Transport: httpTransport}
 
 	req, err := http.NewRequest(http.MethodPost, api.String(), strings.NewReader(values.Encode()))
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", ua)
+	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := client.Do(req)
@@ -113,18 +115,19 @@ type PxyMsg struct {
 
 // TunnelCheck 校验隧道
 func (s Service) VerifyTunnel(pxyMsg PxyMsg) (retStr string, err error) {
-	urlStr := apiUrl + "/verifyTunnel?" +
+	urlStr := apiURL + "/verifyTunnel?" +
 		"token=" + pxyMsg.ServerToken +
 		"&userToken=" + pxyMsg.UserToken + "&name=" + pxyMsg.ProxyName +
 		"&remotePort=" + strconv.Itoa(pxyMsg.RemotePort)
 
-	if pxyMsg.Type == "http" {
-		urlStr = apiUrl + "/verifyTunnel?" +
+	switch pxyMsg.Type {
+	case "http":
+		urlStr = apiURL + "/verifyTunnel?" +
 			"token=" + pxyMsg.ServerToken +
 			"&userToken=" + pxyMsg.UserToken + "&name=" + pxyMsg.ProxyName +
 			"&remotePort=80&bindDomain=" + strings.Join(pxyMsg.CustomDomain, "|")
-	} else if pxyMsg.Type == "https" {
-		urlStr = apiUrl + "/verifyTunnel?" +
+	case "https":
+		urlStr = apiURL + "/verifyTunnel?" +
 			"token=" + pxyMsg.ServerToken +
 			"&userToken=" + pxyMsg.UserToken + "&name=" + pxyMsg.ProxyName +
 			"&remotePort=443&bindDomain=" + strings.Join(pxyMsg.CustomDomain, "|")
@@ -136,7 +139,7 @@ func (s Service) VerifyTunnel(pxyMsg PxyMsg) (retStr string, err error) {
 	if err != nil {
 		return "request creation failed", err
 	}
-	req.Header.Set("User-Agent", ua)
+	req.Header.Set("User-Agent", userAgent)
 	res, err := client.Do(req)
 	if err != nil {
 		return "request failed", err
@@ -170,21 +173,11 @@ func (s Service) VerifyTunnel(pxyMsg PxyMsg) (retStr string, err error) {
 
 // ProxyCheck 校验客户端代理
 func (s Service) ProxyCheck(frpToken string, pMsg *msg.NewProxy, apiToken string, nodeID int) (ok bool, err error) {
-	api, _ := url.Parse(apiUrl + "/server/proxy")
+	api, _ := url.Parse(apiURL + "/server/proxy")
 	domains, err := json.Marshal(pMsg.CustomDomains)
 	if err != nil {
 		return false, err
 	}
-
-	//headers, err := json.Marshal(pMsg.Headers)
-	//if err != nil {
-	//	return false, err
-	//}
-	//
-	//locations, err := json.Marshal(pMsg.Locations)
-	//if err != nil {
-	//	return false, err
-	//}
 
 	values := url.Values{}
 
@@ -196,45 +189,31 @@ func (s Service) ProxyCheck(frpToken string, pMsg *msg.NewProxy, apiToken string
 
 	// Proxies basic info
 	values.Set("proxy_name", name)
-	//log.Info("Proxy name: " + pMsg.ProxyName)
 	values.Set("proxy_type", pMsg.ProxyType)
 	values.Set("use_encryption", BoolToString(pMsg.UseEncryption))
 	values.Set("use_compression", BoolToString(pMsg.UseCompression))
 
 	// Http Proxies
 	values.Set("domain", string(domains))
-	//values.Set("subdomain", pMsg.SubDomain)
-
-	// Headers
-	//values.Set("locations", string(locations))
-	//values.Set("http_user", pMsg.HTTPUser)
-	//values.Set("http_pwd", pMsg.HTTPPwd)
-	//values.Set("host_header_rewrite", pMsg.HostHeaderRewrite)
-	//values.Set("headers", string(headers))
 
 	// TCP & UDP & STCP
 	values.Set("remote_port", strconv.Itoa(pMsg.RemotePort))
-	//log.Info(strconv.Itoa(pMsg.RemotePort))
 
 	// STCP & XTCP
 	values.Set("secret_key", pMsg.Sk)
-
-	// Load balance
-	//values.Set("group", pMsg.Group)
-	//values.Set("group_key", pMsg.GroupKey)
 
 	api.RawQuery = values.Encode()
 	defer func(u *url.URL) {
 		u.RawQuery = ""
 	}(api)
 
-	client := &http.Client{Transport: tr}
+	client := &http.Client{Transport: httpTransport}
 
 	req, err := http.NewRequest(http.MethodGet, api.String(), nil)
 	if err != nil {
 		return false, err
 	}
-	req.Header.Set("User-Agent", ua)
+	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -265,7 +244,7 @@ func (s Service) ProxyCheck(frpToken string, pMsg *msg.NewProxy, apiToken string
 
 // GetLimit 获取隧道限速信息
 func (s Service) GetLimit(frpsToken string, userToken string) (inLimit, outLimit uint64, err error) {
-	api, _ := url.Parse(apiUrl + "/getLimit")
+	api, _ := url.Parse(apiURL + "/getLimit")
 	values := url.Values{}
 	values.Set("token", frpsToken)
 	values.Set("userToken", userToken)
@@ -274,16 +253,15 @@ func (s Service) GetLimit(frpsToken string, userToken string) (inLimit, outLimit
 		u.RawQuery = ""
 	}(api)
 
-	client := &http.Client{Transport: tr}
+	client := &http.Client{Transport: httpTransport}
 
 	req, err := http.NewRequest(http.MethodGet, api.String(), nil)
 	if err != nil {
 		return 0, 0, err
 	}
-	req.Header.Set("User-Agent", ua)
+	req.Header.Set("User-Agent", userAgent)
 
 	resp, err := client.Do(req)
-	//if err != nil { return 1280, 1280, err }
 	if err != nil {
 		return 0, 0, err
 	}

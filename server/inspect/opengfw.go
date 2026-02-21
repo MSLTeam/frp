@@ -191,10 +191,7 @@ func (og *OpenGFW) inspectTCPPayload(sessionID string, meta frpint.StreamMeta, r
 		return false
 	}
 	og.maybeLogDecision(sessionID, rep)
-	if rep.Action == frpint.ActionBlock {
-		return true
-	}
-	return false
+	return rep.Action == frpint.ActionBlock
 }
 
 func (og *OpenGFW) maybeLogDecision(sessionID string, rep frpint.InspectionReport) {
