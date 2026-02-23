@@ -27,7 +27,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fatedier/frp/pkg/api"
+	"github.com/fatedier/frp/pkg/mslapi"
 
 	"github.com/spf13/cobra"
 
@@ -84,7 +84,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cfgUser != "" && cfgTunnel > 0 {
-			s, _err := api.MyAPIService()
+			s, _err := mslapi.MyAPIService()
 			if _err != nil {
 				log.Warnf("Initialize API Service Failed, err: %s", _err)
 			}
