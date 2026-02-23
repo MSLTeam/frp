@@ -1,4 +1,4 @@
-package api
+package mslapi
 
 func BoolToString(val bool) (str string) {
 	if val {

@@ -1,15 +1,16 @@
-package api
+package mslapi
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fatedier/frp/pkg/msg"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/fatedier/frp/pkg/msg"
 )
 
 // Based on LoCyanFrp Frp modification

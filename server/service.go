@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/fatedier/frp/pkg/api"
+	"github.com/fatedier/frp/pkg/mslapi"
 	"github.com/fatedier/golib/crypto"
 	"github.com/fatedier/golib/net/mux"
 	fmux "github.com/hashicorp/yamux"
@@ -612,7 +612,7 @@ func (svr *Service) RegisterControl(ctlConn net.Conn, loginMsg *msg.Login, inter
 		outLimit uint64
 	)
 
-	s, err := api.MyAPIService()
+	s, err := mslapi.MyAPIService()
 	if err != nil {
 		return err
 	}

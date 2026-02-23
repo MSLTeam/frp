@@ -1,4 +1,4 @@
-package api
+package mslapi
 
 import "fmt"
 
@@ -33,5 +33,5 @@ type ResError struct {
 }
 
 func (r ResError) Error() string {
-	return fmt.Sprintf("LoCyanFrp API Error (Status: %d, Message: %s)", r.Status, r.Message)
+	return fmt.Sprintf("MSLF API Error (Status: %d, Message: %s)", r.Status, r.Message)
 }
