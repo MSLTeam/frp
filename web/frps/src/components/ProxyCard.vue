@@ -40,13 +40,22 @@
               >{{ proxy.conns }}</span
             >
           </div>
+          <div class="flex items-baseline gap-1.5">
+            <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+              >版本号:</span
+            >
+            <span
+              class="text-[13px] font-semibold font-mono text-zinc-700 dark:text-zinc-300"
+              >{{ proxy.clientVersion }}</span
+            >
+          </div>
           <div
             v-if="proxy.clientID"
             class="flex items-baseline gap-1.5 min-w-0"
           >
             <span
               class="text-xs font-medium shrink-0 text-zinc-400 dark:text-zinc-500"
-              >客户端:</span
+              >UID:</span
             >
             <span
               class="text-[13px] font-semibold text-zinc-700 dark:text-zinc-300 break-all"
@@ -55,6 +64,7 @@
                   proxy.user
                     ? `${proxy.user}.${proxy.clientID}`
                     : proxy.clientID,
+                  true,
                 )
               "
             >
@@ -63,8 +73,24 @@
                   proxy.user
                     ? `${proxy.user}.${proxy.clientID}`
                     : proxy.clientID,
+                  true,
                 )
               }}
+            </span>
+          </div>
+          <div
+            v-if="proxy.clientID"
+            class="flex items-baseline gap-1.5 min-w-0"
+          >
+            <span
+              class="text-xs font-medium shrink-0 text-zinc-400 dark:text-zinc-500"
+              >设备ID:</span
+            >
+            <span
+              class="text-[13px] font-semibold text-zinc-700 dark:text-zinc-300 break-all"
+              :title="proxy.clientID"
+            >
+              {{ proxy.clientID }}
             </span>
           </div>
         </div>
@@ -128,11 +154,17 @@ interface Props {
 const props = defineProps<Props>()
 const route = useRoute()
 
-const formatSafeText = (text: string | undefined) => {
+const formatSafeText = (
+  text: string | undefined,
+  onlyUid: boolean = false,
+): string => {
   if (!text) return ''
   const match = text.match(/^.*-(\d+)\.(.+)$/)
   if (match) {
     const uid = parseInt(match[1]) - 10000
+    if (onlyUid) {
+      return `${uid}`
+    }
     return `UID:${uid} · ${match[2]}`
   }
   return text

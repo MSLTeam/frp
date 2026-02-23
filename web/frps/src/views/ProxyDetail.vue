@@ -21,7 +21,7 @@
         <router-link
           :to="`/clients/${fromClient}`"
           class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-          >{{ fromClient }}</router-link
+          >{{ formatSafeText(fromClient) }}</router-link
         >
         <span class="mx-2 text-zinc-300 dark:text-zinc-700">/</span>
       </template>
