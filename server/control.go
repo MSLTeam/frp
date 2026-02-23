@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/fatedier/frp/pkg/api"
+	"github.com/fatedier/frp/pkg/mslapi"
 	"golang.org/x/time/rate"
 
 	"net"
@@ -392,7 +392,7 @@ func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
 	for {
 		select {
 		case <-ticker.C:
-			apiPxyMsg := api.PxyMsg{
+			apiPxyMsg := mslapi.PxyMsg{
 				ServerToken:  ctl.serverCfg.ServerToken,
 				UserToken:    ctl.loginMsg.User,
 				ProxyName:    strings.Split(pxyMsg.ProxyName, ".")[1],
@@ -401,7 +401,7 @@ func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
 				CustomDomain: pxyMsg.CustomDomains,
 			}
 
-			apiService := api.Service{}
+			apiService := mslapi.Service{}
 
 			retMsg, _err := apiService.VerifyTunnel(apiPxyMsg)
 			if _err != nil {
@@ -568,7 +568,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		return
 	}
 
-	apiPxyMsg := api.PxyMsg{
+	apiPxyMsg := mslapi.PxyMsg{
 		ServerToken:  ctl.serverCfg.ServerToken,
 		UserToken:    ctl.loginMsg.User,
 		ProxyName:    strings.Split(pxyMsg.ProxyName, ".")[1],
@@ -577,7 +577,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		CustomDomain: pxyMsg.CustomDomains,
 	}
 
-	apiService := api.Service{}
+	apiService := mslapi.Service{}
 
 	retMsg, _err := apiService.VerifyTunnel(apiPxyMsg)
 	if _err != nil {
