@@ -1,91 +1,122 @@
 <template>
-  <div class="proxies-page">
-    <div class="page-header">
-      <div class="header-top">
-        <div class="title-section">
-          <h1 class="page-title">Proxies</h1>
-          <p class="page-subtitle">View and manage all proxy configurations</p>
+  <div
+    class="mx-auto flex flex-col gap-5 text-zinc-800 dark:text-zinc-200 h-full pb-10"
+  >
+    <div
+      class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 p-5 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800/80"
+    >
+      <h3
+        class="text-lg font-bold tracking-tight m-0 flex items-center gap-2 shrink-0"
+      >
+        <el-icon class="text-indigo-500"><Connection /></el-icon> 隧道状态
+      </h3>
+
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 w-full xl:w-auto xl:ml-auto"
+      >
+        <div
+          class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto"
+        >
+          <div class="w-full sm:w-40 lg:w-48 shrink-0">
+            <el-select
+              :model-value="selectedClientKey"
+              placeholder="所有客户端"
+              clearable
+              filterable
+              @change="onClientFilterChange"
+            >
+              <el-option label="全部客户端" value="" />
+              <el-option
+                v-if="clientIDFilter && !selectedClientInList"
+                :label="`${formatSafeText(userFilter ? userFilter + '.' + clientIDFilter : clientIDFilter)} (离线)`"
+                :value="selectedClientKey"
+                style="color: var(--el-color-warning); font-style: italic"
+              />
+              <el-option
+                v-for="client in clientOptions"
+                :key="client.key"
+                :label="client.label"
+                :value="client.key"
+              />
+            </el-select>
+          </div>
+
+          <div class="w-full flex-1 sm:w-48 lg:w-56">
+            <el-input
+              v-model="searchText"
+              placeholder="搜索隧道..."
+              clearable
+              :prefix-icon="Search"
+            />
+          </div>
         </div>
 
-        <div class="actions-section">
-          <el-button :icon="Refresh" class="action-btn" @click="fetchData"
-            >Refresh</el-button
+        <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+          <button
+            @click="fetchData"
+            class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 text-sm font-medium rounded-lg transition-colors border-0 cursor-pointer whitespace-nowrap"
           >
+            <el-icon><Refresh /></el-icon> 刷新
+          </button>
 
           <el-popconfirm
-            title="Clear all offline proxies?"
-            width="220"
-            confirm-button-text="Clear"
-            cancel-button-text="Cancel"
+            title="确定清理离线隧道？"
+            width="200"
             @confirm="clearOfflineProxies"
           >
             <template #reference>
-              <el-button :icon="Delete" class="action-btn" type="danger" plain
-                >Clear Offline</el-button
+              <button
+                class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400 text-sm font-medium rounded-lg transition-colors border-0 cursor-pointer whitespace-nowrap"
               >
+                <el-icon><Delete /></el-icon> 清理
+              </button>
             </template>
           </el-popconfirm>
         </div>
       </div>
-
-      <div class="filter-section">
-        <div class="search-row">
-          <el-input
-            v-model="searchText"
-            placeholder="Search proxies..."
-            :prefix-icon="Search"
-            clearable
-            class="main-search"
-          />
-
-          <el-select
-            :model-value="selectedClientKey"
-            placeholder="All Clients"
-            clearable
-            filterable
-            class="client-select"
-            @change="onClientFilterChange"
-          >
-            <el-option label="All Clients" value="" />
-            <el-option
-              v-if="clientIDFilter && !selectedClientInList"
-              :label="`${userFilter ? userFilter + '.' : ''}${clientIDFilter} (not found)`"
-              :value="selectedClientKey"
-              style="color: var(--el-color-warning); font-style: italic"
-            />
-            <el-option
-              v-for="client in clientOptions"
-              :key="client.key"
-              :label="client.label"
-              :value="client.key"
-            />
-          </el-select>
-        </div>
-
-        <div class="type-tabs">
-          <button
-            v-for="t in proxyTypes"
-            :key="t.value"
-            class="type-tab"
-            :class="{ active: activeType === t.value }"
-            @click="activeType = t.value"
-          >
-            {{ t.label }}
-          </button>
-        </div>
-      </div>
     </div>
 
-    <div v-loading="loading" class="proxies-content">
-      <div v-if="filteredProxies.length > 0" class="proxies-list">
+    <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+      <button
+        v-for="t in proxyTypes"
+        :key="t.value"
+        class="px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap shrink-0 border-0 cursor-pointer"
+        :class="
+          activeType === t.value
+            ? 'bg-indigo-500 text-white shadow-sm'
+            : 'bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800'
+        "
+        @click="activeType = t.value"
+      >
+        {{ t.label }}
+      </button>
+    </div>
+
+    <div
+      v-loading="loading"
+      element-loading-background="rgba(0, 0, 0, 0.0)"
+      class="min-h-[200px]"
+    >
+      <div v-if="filteredProxies.length > 0" class="flex flex-col gap-4">
         <ProxyCard
           v-for="proxy in filteredProxies"
           :key="proxy.name"
           :proxy="proxy"
         />
       </div>
-      <div v-else-if="!loading" class="empty-state">
-        <el-empty description="No proxies found" />
+
+      <div
+        v-else-if="!loading"
+        class="flex flex-col items-center justify-center py-20 text-zinc-400 dark:text-zinc-500 gap-4 bg-white/50 dark:bg-zinc-900/50 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800"
+      >
+        <div
+          class="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"
+        >
+          <el-icon class="text-2xl text-zinc-300 dark:text-zinc-600"
+            ><box
+          /></el-icon>
+        </div>
+        <span class="text-sm font-medium">暂无隧道数据</span>
       </div>
     </div>
   </div>
@@ -95,7 +126,13 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Search, Refresh, Delete } from '@element-plus/icons-vue'
+import {
+  Search,
+  Refresh,
+  Delete,
+  Connection,
+  Box,
+} from '@element-plus/icons-vue'
 import {
   BaseProxy,
   TCPProxy,
@@ -118,6 +155,22 @@ import { Client } from '../utils/client'
 const route = useRoute()
 const router = useRouter()
 
+const formatSafeText = (text: string | undefined | string[]) => {
+  if (!text) return ''
+  const str = String(text)
+  const matchWithSuffix = str.match(/^.*-(\d+)\.(.+)$/)
+  if (matchWithSuffix) {
+    const uid = parseInt(matchWithSuffix[1]) - 10000
+    return `UID:${uid} · ${matchWithSuffix[2]}`
+  }
+  const matchTokenOnly = str.match(/^.*-(\d+)$/)
+  if (matchTokenOnly) {
+    const uid = parseInt(matchTokenOnly[1]) - 10000
+    return `UID:${uid}`
+  }
+  return str
+}
+
 const proxyTypes = [
   { label: 'TCP', value: 'tcp' },
   { label: 'UDP', value: 'udp' },
@@ -138,12 +191,15 @@ const userFilter = ref((route.query.user as string) || '')
 
 const clientOptions = computed(() => {
   return clients.value
-    .map((c) => ({
-      key: c.key,
-      clientID: c.clientID,
-      user: c.user,
-      label: c.user ? `${c.user}.${c.clientID}` : c.clientID,
-    }))
+    .map((c) => {
+      const rawLabel = c.user ? `${c.user}.${c.clientID}` : c.clientID
+      return {
+        key: c.key,
+        clientID: c.clientID,
+        user: c.user,
+        label: formatSafeText(rawLabel), // 在这里对下拉显示的文字进行格式化
+      }
+    })
     .sort((a, b) => a.label.localeCompare(b.label))
 })
 
@@ -313,157 +369,12 @@ fetchClients()
 </script>
 
 <style scoped>
-.proxies-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+/* 隐藏横向滚动的滚动条但保留功能 */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
 }
-
-.page-header {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
-}
-
-.title-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin: 0;
-  line-height: 1.2;
-}
-
-.page-subtitle {
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
-  margin: 0;
-}
-
-.actions-section {
-  display: flex;
-  gap: 12px;
-}
-
-.action-btn {
-  border-radius: 8px;
-  padding: 8px 16px;
-  height: 36px;
-  font-weight: 500;
-}
-
-.filter-section {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-top: 8px;
-}
-
-.search-row {
-  display: flex;
-  gap: 16px;
-  width: 100%;
-  align-items: center;
-}
-
-.main-search {
-  flex: 1;
-}
-
-.main-search,
-.client-select {
-  height: 44px;
-}
-
-.main-search :deep(.el-input__wrapper),
-.client-select :deep(.el-input__wrapper) {
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  padding: 0 16px;
-  height: 100%;
-  border: 1px solid var(--el-border-color);
-}
-
-.main-search :deep(.el-input__wrapper) {
-  font-size: 15px;
-}
-
-.client-select {
-  width: 240px;
-}
-
-.client-select :deep(.el-select__wrapper) {
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  padding: 0 12px;
-  height: 44px;
-  min-height: 44px;
-  border: 1px solid var(--el-border-color);
-}
-
-.type-tabs {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.type-tab {
-  padding: 6px 16px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 12px;
-  background: var(--el-bg-color);
-  color: var(--el-text-color-regular);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-transform: uppercase;
-}
-
-.type-tab:hover {
-  background: var(--el-fill-color-light);
-}
-
-.type-tab.active {
-  background: var(--el-fill-color-darker);
-  color: var(--el-text-color-primary);
-  border-color: var(--el-fill-color-darker);
-}
-
-.proxies-content {
-  min-height: 200px;
-}
-
-.proxies-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.empty-state {
-  padding: 60px 0;
-}
-
-@media (max-width: 768px) {
-  .search-row {
-    flex-direction: column;
-  }
-
-  .client-select {
-    width: 100%;
-  }
+.custom-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>

@@ -1,41 +1,94 @@
 <template>
-  <div class="client-card" @click="viewDetail">
-    <div class="card-icon-wrapper">
-      <div
-        class="status-dot-large"
-        :class="client.online ? 'online' : 'offline'"
-      ></div>
-    </div>
-
-    <div class="card-content">
-      <div class="card-header">
-        <span class="client-main-id">{{ client.displayName }}</span>
-        <span v-if="client.hostname" class="hostname-badge">{{
-          client.hostname
-        }}</span>
-      </div>
-
-      <div class="card-meta">
-        <div class="meta-group">
-          <span v-if="client.ip" class="meta-item">
-            <span class="meta-label">IP</span>
-            <span class="meta-value">{{ client.ip }}</span>
-          </span>
+  <div
+    class="group block w-full bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm hover:shadow-md hover:ring-indigo-500/40 dark:hover:ring-indigo-500/50 transition-all duration-300 text-zinc-800 dark:text-zinc-200 cursor-pointer overflow-hidden"
+    @click="viewDetail"
+  >
+    <div
+      class="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 gap-4"
+    >
+      <div class="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+        <div
+          class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300"
+          :class="
+            client.online
+              ? 'bg-emerald-50 dark:bg-emerald-500/10 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-500/20'
+              : 'bg-zinc-100 dark:bg-zinc-800 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700'
+          "
+        >
+          <span
+            class="w-2.5 h-2.5 rounded-full ring-2 transition-all duration-300"
+            :class="
+              client.online
+                ? 'bg-emerald-500 ring-emerald-200 dark:ring-emerald-500/30'
+                : 'bg-zinc-400 dark:bg-zinc-500 ring-transparent'
+            "
+          ></span>
         </div>
-        <span class="meta-item activity">
-          <el-icon class="activity-icon"><DataLine /></el-icon>
-          <span class="meta-value">{{
-            client.online ? client.lastConnectedAgo : client.disconnectedAgo
-          }}</span>
-        </span>
-      </div>
-    </div>
 
-    <div class="card-action">
-      <div class="status-badge" :class="client.online ? 'online' : 'offline'">
-        {{ client.online ? 'Online' : 'Offline' }}
+        <div class="flex flex-col gap-2.5 min-w-0 flex-1">
+          <div class="flex items-center gap-3">
+            <span
+              class="text-base font-bold text-zinc-900 dark:text-zinc-100 break-all leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
+            >
+              {{ formatSafeText(client.displayName) }}
+            </span>
+            <span
+              v-if="client.hostname"
+              class="shrink-0 px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold tracking-wider text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/50 truncate max-w-[120px]"
+              :title="client.hostname"
+            >
+              {{ client.hostname }}
+            </span>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <div v-if="client.ip" class="flex items-baseline gap-1.5">
+              <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+                >IP:</span
+              >
+              <span
+                class="text-[13px] font-semibold font-mono text-zinc-700 dark:text-zinc-300"
+                >{{ client.ip }}</span
+              >
+            </div>
+            <div class="flex items-center gap-1.5">
+              <el-icon class="text-xs text-zinc-400 dark:text-zinc-500"
+                ><DataLine
+              /></el-icon>
+              <span
+                class="text-[12px] font-medium text-zinc-500 dark:text-zinc-400"
+              >
+                {{
+                  client.online
+                    ? client.lastConnectedAgo
+                    : client.disconnectedAgo
+                }}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
-      <el-icon class="arrow-icon"><ArrowRight /></el-icon>
+
+      <div
+        class="flex flex-row items-center justify-between sm:justify-end gap-6 sm:gap-4 w-full sm:w-auto pt-4 sm:pt-0 border-t border-zinc-100 dark:border-zinc-800/80 sm:border-0 shrink-0"
+      >
+        <div
+          class="flex items-center justify-center px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-widest uppercase transition-colors shrink-0"
+          :class="
+            client.online
+              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+              : 'bg-zinc-50 text-zinc-500 border border-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700/50'
+          "
+        >
+          {{ client.online ? '在线' : '离线' }}
+        </div>
+
+        <el-icon
+          class="text-lg text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-zinc-100 group-hover:translate-x-1 transition-all duration-300"
+        >
+          <ArrowRight />
+        </el-icon>
+      </div>
     </div>
   </div>
 </template>
@@ -52,6 +105,24 @@ interface Props {
 const props = defineProps<Props>()
 const router = useRouter()
 
+const formatSafeText = (text: string | undefined) => {
+  if (!text) return ''
+
+  const matchWithSuffix = text.match(/^.*-(\d+)\.(.+)$/)
+  if (matchWithSuffix) {
+    const uid = parseInt(matchWithSuffix[1]) - 10000
+    return `UID:${uid} · ${matchWithSuffix[2]}`
+  }
+
+  const matchTokenOnly = text.match(/^.*-(\d+)$/)
+  if (matchTokenOnly) {
+    const uid = parseInt(matchTokenOnly[1]) - 10000
+    return `UID:${uid}`
+  }
+
+  return text
+}
+
 const viewDetail = () => {
   router.push({
     name: 'ClientDetail',
@@ -60,199 +131,4 @@ const viewDetail = () => {
 }
 </script>
 
-<style scoped>
-.client-card {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 24px;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.client-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
-  border-color: var(--el-border-color-light);
-}
-
-.card-icon-wrapper {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--el-fill-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s;
-}
-
-.client-card:hover .card-icon-wrapper {
-  background: var(--el-color-success-light-9);
-}
-
-.status-dot-large {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  transition: all 0.3s;
-}
-
-.status-dot-large.online {
-  background-color: var(--el-color-success);
-  box-shadow: 0 0 0 2px var(--el-color-success-light-8);
-}
-
-.status-dot-large.offline {
-  background-color: var(--el-text-color-placeholder);
-}
-
-.card-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.client-main-id {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  line-height: 1.2;
-}
-
-.hostname-badge {
-  font-size: 12px;
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background: var(--el-fill-color-dark);
-  color: var(--el-text-color-regular);
-}
-
-.card-meta {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  font-size: 13px;
-  color: var(--el-text-color-regular);
-  flex-wrap: wrap;
-}
-
-.meta-group {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.meta-label {
-  color: var(--el-text-color-placeholder);
-  font-weight: 500;
-  font-size: 13px;
-}
-
-.meta-value {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--el-text-color-primary);
-}
-
-.activity .meta-value {
-  font-weight: 400;
-  color: var(--el-text-color-secondary);
-}
-
-.card-action {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-shrink: 0;
-}
-
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.status-badge.online {
-  background: var(--el-color-success-light-9);
-  color: var(--el-color-success);
-}
-
-.status-badge.offline {
-  background: var(--el-fill-color);
-  color: var(--el-text-color-secondary);
-}
-
-.arrow-icon {
-  font-size: 18px;
-  color: var(--el-text-color-placeholder);
-  transition: all 0.2s;
-}
-
-.client-card:hover .arrow-icon {
-  color: var(--el-text-color-primary);
-  transform: translateX(4px);
-}
-
-/* Dark mode adjustments */
-html.dark .card-icon-wrapper {
-  background: var(--el-fill-color-light);
-}
-
-html.dark .client-card:hover .card-icon-wrapper {
-  background: var(--el-color-success-light-9);
-}
-
-html.dark .status-dot-large.online {
-  box-shadow: 0 0 0 2px rgba(var(--el-color-success-rgb), 0.2);
-}
-
-@media (max-width: 640px) {
-  .client-card {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 20px;
-  }
-
-  .card-icon-wrapper {
-    width: 48px;
-    height: 48px;
-  }
-
-  .card-content {
-    width: 100%;
-    gap: 12px;
-  }
-
-  .card-action {
-    width: 100%;
-    justify-content: space-between;
-    padding-top: 16px;
-    border-top: 1px solid var(--el-border-color-lighter);
-  }
-}
-</style>
+<style scoped></style>

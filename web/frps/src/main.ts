@@ -5,6 +5,8 @@ import router from './router'
 
 import './assets/css/custom.css'
 import './assets/css/dark.css'
+import './assets/css/tailwind.css'
+import './assets/css/element-override.css'
 
 const app = createApp(App)
 

@@ -1,50 +1,138 @@
 <template>
-  <router-link :to="proxyLink" class="proxy-card">
-    <div class="card-main">
-      <div class="card-left">
-        <div class="card-header">
-          <span class="proxy-name">{{ proxy.name }}</span>
-          <span v-if="showType" class="type-tag">{{
-            proxy.type.toUpperCase()
-          }}</span>
+  <router-link
+    :to="proxyLink"
+    class="group block w-full bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm hover:shadow-md hover:ring-indigo-500/40 dark:hover:ring-indigo-500/50 transition-all duration-300 text-zinc-800 dark:text-zinc-200 cursor-pointer overflow-hidden"
+  >
+    <div
+      class="flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 gap-4"
+    >
+      <div class="flex flex-col gap-3 min-w-0 flex-1">
+        <div class="flex items-center gap-3">
+          <span
+            class="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
+          >
+            {{ formatSafeText(proxy.name) }}
+          </span>
+          <span
+            v-if="showType"
+            class="shrink-0 px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/50"
+          >
+            {{ proxy.type.toUpperCase() }}
+          </span>
         </div>
 
-        <div class="card-meta">
-          <span v-if="proxy.port" class="meta-item">
-            <span class="meta-label">Port:</span>
-            <span class="meta-value">{{ proxy.port }}</span>
-          </span>
-          <span class="meta-item">
-            <span class="meta-label">Connections:</span>
-            <span class="meta-value">{{ proxy.conns }}</span>
-          </span>
-          <span class="meta-item" v-if="proxy.clientID">
-            <span class="meta-label">Client:</span>
-            <span class="meta-value">{{
-              proxy.user ? `${proxy.user}.${proxy.clientID}` : proxy.clientID
-            }}</span>
-          </span>
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2.5">
+          <div v-if="proxy.port" class="flex items-baseline gap-1.5">
+            <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+              >端口:</span
+            >
+            <span
+              class="text-[13px] font-semibold font-mono text-zinc-700 dark:text-zinc-300"
+              >{{ proxy.port }}</span
+            >
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+              >连接数:</span
+            >
+            <span
+              class="text-[13px] font-semibold font-mono text-zinc-700 dark:text-zinc-300"
+              >{{ proxy.conns }}</span
+            >
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+              >版本号:</span
+            >
+            <span
+              class="text-[13px] font-semibold font-mono text-zinc-700 dark:text-zinc-300"
+              >{{ proxy.clientVersion }}</span
+            >
+          </div>
+          <div
+            v-if="proxy.clientID"
+            class="flex items-baseline gap-1.5 min-w-0"
+          >
+            <span
+              class="text-xs font-medium shrink-0 text-zinc-400 dark:text-zinc-500"
+              >UID:</span
+            >
+            <span
+              class="text-[13px] font-semibold text-zinc-700 dark:text-zinc-300 break-all"
+              :title="
+                formatSafeText(
+                  proxy.user
+                    ? `${proxy.user}.${proxy.clientID}`
+                    : proxy.clientID,
+                  true,
+                )
+              "
+            >
+              {{
+                formatSafeText(
+                  proxy.user
+                    ? `${proxy.user}.${proxy.clientID}`
+                    : proxy.clientID,
+                  true,
+                )
+              }}
+            </span>
+          </div>
+          <div
+            v-if="proxy.clientID"
+            class="flex items-baseline gap-1.5 min-w-0"
+          >
+            <span
+              class="text-xs font-medium shrink-0 text-zinc-400 dark:text-zinc-500"
+              >设备ID:</span
+            >
+            <span
+              class="text-[13px] font-semibold text-zinc-700 dark:text-zinc-300 break-all"
+              :title="proxy.clientID"
+            >
+              {{ proxy.clientID }}
+            </span>
+          </div>
         </div>
       </div>
 
-      <div class="card-right">
-        <div class="traffic-stats">
-          <div class="traffic-row">
-            <el-icon class="traffic-icon out"><Top /></el-icon>
-            <span class="traffic-value">{{
-              formatFileSize(proxy.trafficOut)
-            }}</span>
+      <div
+        class="flex flex-row items-center justify-between sm:justify-end gap-6 sm:gap-8 w-full sm:w-auto pt-4 sm:pt-0 border-t border-zinc-100 dark:border-zinc-800/80 sm:border-0 shrink-0"
+      >
+        <div
+          class="flex sm:flex-col items-center sm:items-end gap-4 sm:gap-1.5"
+        >
+          <div class="flex items-center gap-1.5">
+            <el-icon class="text-sm text-emerald-500 dark:text-emerald-400"
+              ><Top
+            /></el-icon>
+            <span
+              class="text-[11px] font-mono font-medium text-zinc-500 dark:text-zinc-400 w-16 sm:text-right"
+            >
+              {{ formatFileSize(proxy.trafficOut) }}
+            </span>
           </div>
-          <div class="traffic-row">
-            <el-icon class="traffic-icon in"><Bottom /></el-icon>
-            <span class="traffic-value">{{
-              formatFileSize(proxy.trafficIn)
-            }}</span>
+          <div class="flex items-center gap-1.5">
+            <el-icon class="text-sm text-blue-500 dark:text-blue-400"
+              ><Bottom
+            /></el-icon>
+            <span
+              class="text-[11px] font-mono font-medium text-zinc-500 dark:text-zinc-400 w-16 sm:text-right"
+            >
+              {{ formatFileSize(proxy.trafficIn) }}
+            </span>
           </div>
         </div>
 
-        <div class="status-badge" :class="proxy.status">
-          {{ proxy.status }}
+        <div
+          class="flex items-center justify-center px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-widest uppercase transition-colors shrink-0"
+          :class="
+            proxy.status === 'online'
+              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+              : 'bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20'
+          "
+        >
+          {{ proxy.status === 'online' ? '在线' : '离线' }}
         </div>
       </div>
     </div>
@@ -66,6 +154,22 @@ interface Props {
 const props = defineProps<Props>()
 const route = useRoute()
 
+const formatSafeText = (
+  text: string | undefined,
+  onlyUid: boolean = false,
+): string => {
+  if (!text) return ''
+  const match = text.match(/^.*-(\d+)\.(.+)$/)
+  if (match) {
+    const uid = parseInt(match[1]) - 10000
+    if (onlyUid) {
+      return `${uid}`
+    }
+    return `UID:${uid} · ${match[2]}`
+  }
+  return text
+}
+
 const proxyLink = computed(() => {
   const base = `/proxy/${props.proxy.name}`
   // If we're on a client detail page, pass client info
@@ -76,169 +180,4 @@ const proxyLink = computed(() => {
 })
 </script>
 
-<style scoped>
-.proxy-card {
-  display: block;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 12px;
-  transition: all 0.2s ease-in-out;
-  overflow: hidden;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.proxy-card:hover {
-  border-color: var(--el-border-color-light);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-}
-
-.card-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  gap: 24px;
-  min-height: 80px;
-}
-
-/* Left Section */
-.card-left {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 12px;
-  flex: 1;
-  min-width: 0;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.proxy-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  line-height: 1.4;
-}
-
-.type-tag {
-  font-size: 11px;
-  font-weight: 500;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--el-fill-color);
-  color: var(--el-text-color-secondary);
-}
-
-.card-meta {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.meta-item {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  line-height: 1;
-}
-
-.meta-label {
-  color: var(--el-text-color-placeholder);
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.meta-value {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--el-text-color-regular);
-}
-
-/* Right Section */
-.card-right {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  flex-shrink: 0;
-}
-
-.traffic-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: flex-end;
-}
-
-.traffic-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  line-height: 1;
-}
-
-.traffic-icon {
-  font-size: 12px;
-}
-
-.traffic-icon.in {
-  color: var(--el-color-primary);
-}
-
-.traffic-icon.out {
-  color: var(--el-color-success);
-}
-
-.traffic-value {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  font-weight: 500;
-  text-align: right;
-}
-
-.status-badge {
-  display: inline-flex;
-  padding: 2px 10px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.status-badge.online {
-  background: var(--el-color-success-light-9);
-  color: var(--el-color-success);
-}
-
-.status-badge.offline {
-  background: var(--el-color-danger-light-9);
-  color: var(--el-color-danger);
-}
-
-/* Mobile Responsive */
-@media (max-width: 768px) {
-  .card-main {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-    padding: 16px;
-  }
-
-  .card-right {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    border-top: 1px solid var(--el-border-color-lighter);
-    padding-top: 16px;
-  }
-
-  .traffic-stats {
-    align-items: flex-start;
-  }
-}
-</style>
+<style scoped></style>

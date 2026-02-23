@@ -1,47 +1,90 @@
 <template>
-  <div class="clients-page">
-    <div class="page-header">
-      <div class="header-top">
-        <div class="title-section">
-          <h1 class="page-title">Clients</h1>
-          <p class="page-subtitle">Manage connected clients and their status</p>
-        </div>
-        <div class="status-tabs">
-          <button
-            v-for="tab in statusTabs"
-            :key="tab.value"
-            class="status-tab"
-            :class="{ active: statusFilter === tab.value }"
-            @click="statusFilter = tab.value"
-          >
-            <span class="status-dot" :class="tab.value"></span>
-            <span class="tab-label">{{ tab.label }}</span>
-            <span class="tab-count">{{ tab.count }}</span>
-          </button>
-        </div>
+  <div
+    class="mx-auto flex flex-col gap-5 text-zinc-800 dark:text-zinc-200 h-full pb-10"
+  >
+    <div
+      class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 p-5 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-zinc-200 dark:border-zinc-800/80"
+    >
+      <div class="flex flex-col gap-1 shrink-0">
+        <h3
+          class="text-lg font-bold tracking-tight m-0 flex items-center gap-2"
+        >
+          <el-icon class="text-indigo-500"><Monitor /></el-icon> 客户端状态
+        </h3>
       </div>
 
-      <div class="search-section">
-        <el-input
-          v-model="searchText"
-          placeholder="Search clients..."
-          :prefix-icon="Search"
-          clearable
-          class="search-input"
-        />
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3 w-full xl:w-auto xl:ml-auto"
+      >
+        <div class="w-full sm:w-64 lg:w-72 shrink-0">
+          <el-input
+            v-model="searchText"
+            placeholder="搜索客户端..."
+            clearable
+            :prefix-icon="Search"
+          />
+        </div>
       </div>
     </div>
 
-    <div v-loading="loading" class="clients-content">
-      <div v-if="filteredClients.length > 0" class="clients-list">
+    <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+      <button
+        v-for="tab in statusTabs"
+        :key="tab.value"
+        class="flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap shrink-0 border-0 cursor-pointer"
+        :class="
+          statusFilter === tab.value
+            ? 'bg-indigo-500 text-white shadow-sm'
+            : 'bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800'
+        "
+        @click="statusFilter = tab.value"
+      >
+        <span
+          class="w-2 h-2 rounded-full"
+          :class="{
+            'bg-zinc-200 dark:bg-zinc-600':
+              tab.value === 'all' && statusFilter !== 'all',
+            'bg-zinc-100': tab.value === 'all' && statusFilter === 'all',
+            'bg-emerald-500':
+              tab.value === 'online' && statusFilter !== 'online',
+            'bg-emerald-300':
+              tab.value === 'online' && statusFilter === 'online',
+            'bg-zinc-400':
+              tab.value === 'offline' && statusFilter !== 'offline',
+            'bg-zinc-300':
+              tab.value === 'offline' && statusFilter === 'offline',
+          }"
+        ></span>
+        {{ tab.label }}
+        <span class="opacity-80 ml-0.5">{{ tab.count }}</span>
+      </button>
+    </div>
+
+    <div
+      v-loading="loading"
+      element-loading-background="rgba(0, 0, 0, 0.0)"
+      class="min-h-[200px]"
+    >
+      <div v-if="filteredClients.length > 0" class="flex flex-col gap-4">
         <ClientCard
           v-for="client in filteredClients"
           :key="client.key"
           :client="client"
         />
       </div>
-      <div v-else-if="!loading" class="empty-state">
-        <el-empty description="No clients found" />
+
+      <div
+        v-else-if="!loading"
+        class="flex flex-col items-center justify-center py-20 text-zinc-400 dark:text-zinc-500 gap-4 bg-white/50 dark:bg-zinc-900/50 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800"
+      >
+        <div
+          class="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center"
+        >
+          <el-icon class="text-2xl text-zinc-300 dark:text-zinc-600"
+            ><Monitor
+          /></el-icon>
+        </div>
+        <span class="text-sm font-medium">未找到任何客户端</span>
       </div>
     </div>
   </div>
@@ -50,7 +93,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
+import { Search, Monitor } from '@element-plus/icons-vue'
 import { Client } from '../utils/client'
 import ClientCard from '../components/ClientCard.vue'
 import { getClients } from '../api/client'
@@ -70,9 +113,9 @@ const stats = computed(() => {
 })
 
 const statusTabs = computed(() => [
-  { value: 'all' as const, label: 'All', count: stats.value.total },
-  { value: 'online' as const, label: 'Online', count: stats.value.online },
-  { value: 'offline' as const, label: 'Offline', count: stats.value.offline },
+  { value: 'all' as const, label: '全部', count: stats.value.total },
+  { value: 'online' as const, label: '在线', count: stats.value.online },
+  { value: 'offline' as const, label: '离线', count: stats.value.offline },
 ])
 
 const filteredClients = computed(() => {
@@ -141,162 +184,12 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.clients-page {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+/* 隐藏横向滚动的滚动条但保留功能 */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
 }
-
-.page-header {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.title-section {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin: 0;
-  line-height: 1.2;
-}
-
-.page-subtitle {
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
-  margin: 0;
-}
-
-.status-tabs {
-  display: flex;
-  gap: 12px;
-}
-
-.status-tab {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: 1px solid var(--el-border-color);
-  border-radius: 20px;
-  background: var(--el-bg-color);
-  color: var(--el-text-color-regular);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.status-tab:hover {
-  border-color: var(--el-border-color-darker);
-  background: var(--el-fill-color-light);
-}
-
-.status-tab.active {
-  background: var(--el-fill-color-dark);
-  border-color: var(--el-text-color-primary);
-  color: var(--el-text-color-primary);
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: var(--el-text-color-secondary);
-}
-
-.status-dot.online {
-  background-color: var(--el-color-success);
-}
-
-.status-dot.offline {
-  background-color: var(--el-text-color-placeholder);
-}
-
-.status-dot.all {
-  background-color: var(--el-text-color-regular);
-}
-
-.tab-count {
-  font-weight: 500;
-  opacity: 0.8;
-}
-
-.search-section {
-  width: 100%;
-}
-
-.search-input :deep(.el-input__wrapper) {
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  padding: 8px 16px;
-  border: 1px solid var(--el-border-color);
-  transition: all 0.2s;
-  height: 48px;
-  font-size: 15px;
-}
-
-.search-input :deep(.el-input__wrapper:hover) {
-  border-color: var(--el-border-color-darker);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
-}
-
-.search-input :deep(.el-input__wrapper.is-focus) {
-  border-color: var(--el-color-primary);
-  box-shadow: 0 0 0 1px var(--el-color-primary);
-}
-
-.clients-content {
-  min-height: 200px;
-}
-
-.clients-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.empty-state {
-  padding: 60px 0;
-}
-
-/* Dark mode adjustments */
-html.dark .status-tab {
-  background: var(--el-bg-color-overlay);
-}
-
-html.dark .status-tab.active {
-  background: var(--el-fill-color);
-}
-
-@media (max-width: 640px) {
-  .header-top {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .status-tabs {
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-
-  .status-tab {
-    flex-shrink: 0;
-  }
+.custom-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>

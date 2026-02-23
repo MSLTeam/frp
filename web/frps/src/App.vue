@@ -1,272 +1,219 @@
 <template>
-  <div id="app">
-    <header class="header">
-      <div class="header-content">
-        <div class="header-top">
-          <div class="brand-section">
-            <div class="logo-wrapper">
-              <LogoIcon class="logo-icon" />
+  <div
+    id="app"
+    class="min-h-screen flex flex-col bg-zinc-50 dark:bg-black font-sans text-zinc-900 dark:text-zinc-100 transition-colors duration-300"
+  >
+    <header
+      class="sticky top-0 z-[100] w-full bg-white/70 dark:bg-zinc-950/70 backdrop-blur-2xl border-b border-zinc-200/80 dark:border-zinc-800/80 shadow-sm transition-colors duration-300"
+    >
+      <div class="w-full px-4 sm:px-6 md:px-8">
+        <div class="h-16 flex items-center justify-between gap-4">
+          <div
+            class="flex items-center gap-3 shrink-0 group cursor-pointer hover:opacity-80 transition-opacity"
+          >
+            <div
+              class="flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-br from-zinc-100 to-white dark:from-zinc-800 dark:to-zinc-900 ring-1 ring-zinc-200/80 dark:ring-zinc-700/80 shadow-sm group-hover:ring-indigo-500/50 transition-all"
+            >
+              <img
+                src="./assets/icons/msl-user.png"
+                class="w-6 h-6 object-contain drop-shadow-sm"
+                alt="MSL Logo"
+              />
             </div>
-            <span class="divider">/</span>
-            <span class="brand-name">frp</span>
-            <span class="badge server-badge">Server</span>
-            <span class="badge" v-if="currentRouteName">{{
-              currentRouteName
-            }}</span>
+            <div class="flex flex-col justify-center">
+              <div class="flex items-center gap-2">
+                <span
+                  class="font-black text-[17px] text-zinc-900 dark:text-white tracking-tight leading-none"
+                  >MSLFrp</span
+                >
+                <span
+                  class="hidden sm:inline-block text-[9px] px-2 py-0.5 rounded-md bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-black tracking-widest uppercase leading-none shadow-sm"
+                >
+                  节点控制台
+                </span>
+              </div>
+              <span
+                class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 leading-none mt-1.5 uppercase tracking-wider"
+              >
+                {{ currentRouteName || 'System' }}
+              </span>
+            </div>
           </div>
 
-          <div class="header-controls">
+          <nav
+            class="hidden md:flex items-center p-1 bg-zinc-100/80 dark:bg-zinc-800/80 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-inner"
+          >
+            <router-link
+              to="/"
+              class="px-6 py-1.5 text-[13px] font-bold text-zinc-500 dark:text-zinc-400 rounded-lg transition-all duration-300 select-none"
+              active-class="!text-zinc-900 dark:!text-white bg-white dark:bg-zinc-700 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600"
+            >
+              仪表盘
+            </router-link>
+
+            <router-link
+              to="/clients"
+              class="px-6 py-1.5 text-[13px] font-bold text-zinc-500 dark:text-zinc-400 rounded-lg transition-all duration-300 select-none"
+              active-class="!text-zinc-900 dark:!text-white bg-white dark:bg-zinc-700 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600"
+            >
+              客户端
+            </router-link>
+
+            <router-link
+              to="/proxies"
+              class="px-6 py-1.5 text-[13px] font-bold text-zinc-500 dark:text-zinc-400 rounded-lg transition-all duration-300 select-none"
+              :class="{
+                '!text-zinc-900 dark:!text-white bg-white dark:bg-zinc-700 shadow-sm ring-1 ring-zinc-200 dark:ring-zinc-600':
+                  route.path.startsWith('/proxies'),
+              }"
+            >
+              隧道
+            </router-link>
+          </nav>
+
+          <div class="flex items-center gap-2.5 sm:gap-3 shrink-0">
             <a
-              class="github-link"
-              href="https://github.com/fatedier/frp"
+              class="w-9 h-9 flex items-center justify-center rounded-xl bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700/80 transition-all shadow-sm hover:shadow"
+              href="https://github.com/MSLTeam/frp"
               target="_blank"
               aria-label="GitHub"
             >
-              <GitHubIcon class="github-icon" />
+              <GitHubIcon class="w-[18px] h-[18px] fill-current" />
             </a>
-            <el-switch
-              v-model="isDark"
-              inline-prompt
-              :active-icon="Moon"
-              :inactive-icon="Sunny"
-              class="theme-switch"
-            />
+
+            <div
+              class="h-4 w-px bg-zinc-200 dark:bg-zinc-700 hidden sm:block mx-1"
+            ></div>
+
+            <div
+              class="flex items-center justify-center h-9 px-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200/80 dark:border-zinc-700/80 shadow-sm"
+            >
+              <el-switch
+                :model-value="isDark"
+                @change="toggleTheme"
+                inline-prompt
+                :active-icon="Moon"
+                :inactive-icon="Sunny"
+                class="theme-switch !h-5"
+              />
+            </div>
           </div>
         </div>
 
-        <nav class="nav-bar">
-          <router-link to="/" class="nav-link" active-class="active"
-            >Overview</router-link
+        <nav
+          class="md:hidden flex items-center gap-2 overflow-x-auto custom-scrollbar py-2.5 border-t border-zinc-100 dark:border-zinc-800/80"
+        >
+          <router-link
+            to="/"
+            class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 bg-zinc-100/50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50 rounded-lg whitespace-nowrap transition-all"
+            active-class="!text-zinc-900 dark:!text-white !bg-white dark:!bg-zinc-800 !border-zinc-300 dark:!border-zinc-600 shadow-sm"
           >
-          <router-link to="/clients" class="nav-link" active-class="active"
-            >Clients</router-link
+            仪表盘
+          </router-link>
+          <router-link
+            to="/clients"
+            class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 bg-zinc-100/50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50 rounded-lg whitespace-nowrap transition-all"
+            active-class="!text-zinc-900 dark:!text-white !bg-white dark:!bg-zinc-800 !border-zinc-300 dark:!border-zinc-600 shadow-sm"
           >
+            客户端
+          </router-link>
           <router-link
             to="/proxies"
-            class="nav-link"
-            :class="{ active: route.path.startsWith('/proxies') }"
-            >Proxies</router-link
+            class="px-4 py-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 bg-zinc-100/50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50 rounded-lg whitespace-nowrap transition-all"
+            :class="{
+              '!text-zinc-900 dark:!text-white !bg-white dark:!bg-zinc-800 !border-zinc-300 dark:!border-zinc-600 shadow-sm':
+                route.path.startsWith('/proxies'),
+            }"
           >
+            隧道
+          </router-link>
         </nav>
       </div>
     </header>
 
-    <main id="content">
-      <router-view></router-view>
+    <main
+      id="content"
+      class="flex-1 w-full px-4 sm:px-6 md:px-8 py-6 sm:py-8 box-border"
+    >
+      <router-view v-slot="{ Component }">
+        <transition name="page-fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useDark } from '@vueuse/core'
 import { Moon, Sunny } from '@element-plus/icons-vue'
 import GitHubIcon from './assets/icons/github.svg?component'
-import LogoIcon from './assets/icons/logo.svg?component'
 
 const route = useRoute()
 const isDark = useDark()
 
+const toggleTheme = (val: boolean | string | number) => {
+  const isDarkVal = val as boolean
+
+  if (!document.startViewTransition) {
+    isDark.value = isDarkVal
+    return
+  }
+
+  document.startViewTransition(async () => {
+    isDark.value = isDarkVal
+    await nextTick()
+  })
+}
+
 const currentRouteName = computed(() => {
-  if (route.path === '/') return 'Overview'
-  if (route.path.startsWith('/clients')) return 'Clients'
-  if (route.path.startsWith('/proxies')) return 'Proxies'
+  if (route.path === '/') return '仪表盘'
+  if (route.path.startsWith('/clients')) return '客户端'
+  if (route.path.startsWith('/proxies')) return '隧道数'
   return ''
 })
 </script>
 
-<style>
-:root {
-  --header-height: 112px;
-  --header-bg: rgba(255, 255, 255, 0.8);
-  --header-border: #eaeaea;
-  --text-primary: #000;
-  --text-secondary: #666;
-  --hover-bg: #f5f5f5;
-  --active-link: #000;
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.custom-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-html.dark {
-  --header-bg: rgba(0, 0, 0, 0.8);
-  --header-border: #333;
-  --text-primary: #fff;
-  --text-secondary: #888;
-  --hover-bg: #1a1a1a;
-  --active-link: #fff;
+/* 隐藏横向滚动的滚动条但保留滚动功能 */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.custom-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-body {
-  margin: 0;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
-    Arial, sans-serif;
+
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.25s ease;
 }
 
-#app {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--el-bg-color-page);
+/* 新页面进场前的初始状态：轻微向下偏移、缩小、模糊、透明 */
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px) scale(0.99);
+  filter: blur(4px);
 }
 
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--header-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--header-border);
-}
-
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 40px;
-}
-
-.header-top {
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.brand-section {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.logo-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-.logo-icon {
-  width: 32px;
-  height: 32px;
-}
-
-.divider {
-  color: var(--header-border);
-  font-size: 24px;
-  font-weight: 200;
-}
-
-.brand-name {
-  font-weight: 600;
-  font-size: 18px;
-  color: var(--text-primary);
-  letter-spacing: -0.5px;
-}
-
-.badge {
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: var(--hover-bg);
-  padding: 2px 8px;
-  border-radius: 99px;
-  border: 1px solid var(--header-border);
-}
-
-.badge.server-badge {
-  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
-  color: white;
-  border: none;
-  font-weight: 500;
-}
-
-html.dark .badge.server-badge {
-  background: linear-gradient(135deg, #60a5fa 0%, #22d3ee 100%);
-}
-
-.header-controls {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.github-link {
-  width: 26px;
-  height: 26px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  color: var(--text-primary);
-  transition: background 0.2s;
-  background: transparent;
-  border: 1px solid transparent;
-  cursor: pointer;
-}
-
-.github-icon {
-  width: 18px;
-  height: 18px;
-}
-
-.github-link:hover {
-  background: var(--hover-bg);
-  border-color: var(--header-border);
-}
-
-.theme-switch {
-  --el-switch-on-color: #2c2c3a;
-  --el-switch-off-color: #f2f2f2;
-  --el-switch-border-color: var(--header-border);
-}
-
-html.dark .theme-switch {
-  --el-switch-off-color: #333;
-}
-
-.theme-switch .el-switch__core .el-switch__inner .el-icon {
-  color: #909399 !important;
-}
-
-.nav-bar {
-  height: 48px;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.nav-link {
-  text-decoration: none;
-  font-size: 14px;
-  color: var(--text-secondary);
-  padding: 8px 0;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-}
-
-.nav-link:hover {
-  color: var(--text-primary);
-}
-
-.nav-link.active {
-  color: var(--active-link);
-  border-bottom-color: var(--active-link);
-}
-
-#content {
-  flex: 1;
-  width: 100%;
-  padding: 40px;
-  max-width: 1200px;
-  margin: 0 auto;
-  box-sizing: border-box;
-}
-
-@media (max-width: 768px) {
-  .header-content {
-    padding: 0 20px;
-  }
-
-  #content {
-    padding: 20px;
-  }
+/* 老页面退场后的最终状态：轻微向上偏移、缩小、模糊、透明 */
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.99);
+  filter: blur(4px);
 }
 </style>
