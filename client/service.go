@@ -281,6 +281,8 @@ func (svr *Service) login() (conn net.Conn, connector Connector, err error) {
 		return
 	}
 
+	hostname, _ := os.Hostname()
+
 	if svr.common.Metadatas["mslFrpRemoteDomain"] != "" {
 		svr.remoteDomain = svr.common.Metadatas["mslFrpRemoteDomain"]
 		delete(svr.common.Metadatas, "mslFrpRemoteDomain")
@@ -290,8 +292,10 @@ func (svr *Service) login() (conn net.Conn, connector Connector, err error) {
 	loginMsg := &msg.Login{
 		Arch:      runtime.GOARCH,
 		Os:        runtime.GOOS,
+		Hostname:  hostname,
 		PoolCount: svr.common.Transport.PoolCount,
 		User:      svr.common.User,
+		ClientID:  svr.common.ClientID,
 		Version:   version.Full(),
 		Timestamp: time.Now().Unix(),
 		RunID:     svr.runID,

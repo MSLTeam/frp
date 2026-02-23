@@ -1,256 +1,272 @@
 <template>
-  <div class="app-container">
-    <!-- 头部 -->
-    <header class="app-header">
+  <div id="app">
+    <header class="header">
       <div class="header-content">
-        <router-link to="/" class="brand">
-          <img src="/favicon.ico" alt="Logo" class="logo" />
-          <span class="title">MSLFrp 节点监控</span>
-        </router-link>
-        <el-switch
-          v-model="darkmodeSwitch"
-          inline-prompt
-          :active-icon="Moon"
-          :inactive-icon="Sunny"
-          @change="toggleDark"
-          class="theme-switch"
-        />
+        <div class="header-top">
+          <div class="brand-section">
+            <div class="logo-wrapper">
+              <LogoIcon class="logo-icon" />
+            </div>
+            <span class="divider">/</span>
+            <span class="brand-name">frp</span>
+            <span class="badge server-badge">Server</span>
+            <span class="badge" v-if="currentRouteName">{{
+              currentRouteName
+            }}</span>
+          </div>
+
+          <div class="header-controls">
+            <a
+              class="github-link"
+              href="https://github.com/fatedier/frp"
+              target="_blank"
+              aria-label="GitHub"
+            >
+              <GitHubIcon class="github-icon" />
+            </a>
+            <el-switch
+              v-model="isDark"
+              inline-prompt
+              :active-icon="Moon"
+              :inactive-icon="Sunny"
+              class="theme-switch"
+            />
+          </div>
+        </div>
+
+        <nav class="nav-bar">
+          <router-link to="/" class="nav-link" active-class="active"
+            >Overview</router-link
+          >
+          <router-link to="/clients" class="nav-link" active-class="active"
+            >Clients</router-link
+          >
+          <router-link
+            to="/proxies"
+            class="nav-link"
+            :class="{ active: route.path.startsWith('/proxies') }"
+            >Proxies</router-link
+          >
+        </nav>
       </div>
     </header>
 
-    <!-- 主内容 -->
-    <main class="app-main">
-      <el-row class="main-wrapper" :gutter="0">
-        <!-- 侧边导航 -->
-        <el-col :xs="24" :md="4" class="nav-col">
-          <el-scrollbar>
-            <el-menu
-              :default-active="$route.path"
-              router
-              class="side-nav"
-              :collapse="isCollapse"
-              @select="handleSelect"
-            >
-              <el-menu-item index="/">
-                <el-icon><HomeFilled /></el-icon>
-                <span>总览看板</span>
-              </el-menu-item>
-
-              <el-sub-menu index="/proxies">
-                <template #title>
-                  <el-icon><Connection /></el-icon>
-                  <span>隧道管理</span>
-                </template>
-                <el-menu-item
-                  v-for="item in proxyTypes"
-                  :key="item.value"
-                  :index="`/proxies/${item.value}`"
-                >
-                  {{ item.label }}
-                </el-menu-item>
-              </el-sub-menu>
-
-              <el-menu-item index="/user-center">
-                <el-icon><User /></el-icon>
-                <span>用户中心</span>
-              </el-menu-item>
-            </el-menu>
-          </el-scrollbar>
-        </el-col>
-
-        <!-- 内容区 -->
-        <el-col :xs="24" :md="20" class="content-col">
-          <el-scrollbar class="content-scroll">
-            <router-view v-slot="{ Component }">
-              <transition name="fade-slide" mode="out-in">
-                <component :is="Component" class="page-content" />
-              </transition>
-            </router-view>
-          </el-scrollbar>
-        </el-col>
-      </el-row>
+    <main id="content">
+      <router-view></router-view>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useDark, useToggle } from '@vueuse/core'
-import {
-  HomeFilled,
-  Connection,
-  User,
-  Moon,
-  Sunny,
-} from '@element-plus/icons-vue'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useDark } from '@vueuse/core'
+import { Moon, Sunny } from '@element-plus/icons-vue'
+import GitHubIcon from './assets/icons/github.svg?component'
+import LogoIcon from './assets/icons/logo.svg?component'
 
-// 响应式布局
-const isCollapse = ref(false)
-const proxyTypes = [
-  { value: 'tcp', label: 'TCP' },
-  { value: 'udp', label: 'UDP' },
-  { value: 'http', label: 'HTTP' },
-  { value: 'https', label: 'HTTPS' },
-  { value: 'tcpmux', label: 'TCPMUX' },
-  { value: 'stcp', label: 'STCP' },
-  { value: 'sudp', label: 'SUDP' },
-]
-
-// 暗黑模式
+const route = useRoute()
 const isDark = useDark()
-const darkmodeSwitch = ref(isDark)
-const toggleDark = useToggle(isDark)
 
-const handleSelect = (key: string) => {
-  if (key === '/user-center') {
-    window.open('https://user.mslmc.net', '_blank')
-  }
-}
+const currentRouteName = computed(() => {
+  if (route.path === '/') return 'Overview'
+  if (route.path.startsWith('/clients')) return 'Clients'
+  if (route.path.startsWith('/proxies')) return 'Proxies'
+  return ''
+})
 </script>
 
-<style lang="scss" scoped>
+<style>
+:root {
+  --header-height: 112px;
+  --header-bg: rgba(255, 255, 255, 0.8);
+  --header-border: #eaeaea;
+  --text-primary: #000;
+  --text-secondary: #666;
+  --hover-bg: #f5f5f5;
+  --active-link: #000;
+}
 
-.app-container {
-  height: 100vh;
+html.dark {
+  --header-bg: rgba(0, 0, 0, 0.8);
+  --header-border: #333;
+  --text-primary: #fff;
+  --text-secondary: #888;
+  --hover-bg: #1a1a1a;
+  --active-link: #fff;
+}
+
+body {
+  margin: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+}
+
+#app {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--el-bg-color-page);
-  margin: 0;
-  overflow: hidden;
+  background-color: var(--el-bg-color-page);
 }
 
-.app-header {
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--header-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--header-border);
+}
+
+.header-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.header-top {
   height: 64px;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
-
-  .dark & {
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  }
-
-  .header-content {
-    height: 100%;
-    margin-right: 10px;
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    text-decoration: none;
-
-    .logo {
-      height: 36px;
-      border-radius: 6px;
-    }
-
-    .title {
-      color: #fff;
-      font-size: 20px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-    }
-  }
-
-  .theme-switch {
-    --el-switch-on-color: #475569;
-    --el-switch-off-color: #e2e8f0;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
-.app-main {
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.divider {
+  color: var(--header-border);
+  font-size: 24px;
+  font-weight: 200;
+}
+
+.brand-name {
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+}
+
+.badge {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--hover-bg);
+  padding: 2px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--header-border);
+}
+
+.badge.server-badge {
+  background: linear-gradient(135deg, #3b82f6 0%, #06b6d4 100%);
+  color: white;
+  border: none;
+  font-weight: 500;
+}
+
+html.dark .badge.server-badge {
+  background: linear-gradient(135deg, #60a5fa 0%, #22d3ee 100%);
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.github-link {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--text-primary);
+  transition: background 0.2s;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.github-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.github-link:hover {
+  background: var(--hover-bg);
+  border-color: var(--header-border);
+}
+
+.theme-switch {
+  --el-switch-on-color: #2c2c3a;
+  --el-switch-off-color: #f2f2f2;
+  --el-switch-border-color: var(--header-border);
+}
+
+html.dark .theme-switch {
+  --el-switch-off-color: #333;
+}
+
+.theme-switch .el-switch__core .el-switch__inner .el-icon {
+  color: #909399 !important;
+}
+
+.nav-bar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.nav-link {
+  text-decoration: none;
+  font-size: 14px;
+  color: var(--text-secondary);
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+}
+
+.nav-link.active {
+  color: var(--active-link);
+  border-bottom-color: var(--active-link);
+}
+
+#content {
   flex: 1;
-  overflow: hidden;
-
-  .main-wrapper {
-    height: 100%;
-    margin: 0 !important;
-  }
-}
-
-.nav-col {
-  background: var(--el-bg-color-overlay);
-  border-right: 1px solid var(--el-border-color-light);
-
-  .side-nav {
-    :deep(.el-menu-item),
-    :deep(.el-sub-menu__title) {
-      justify-content: flex-start;
-      text-align: left;
-      padding-left: 20px !important;
-
-      .el-icon {
-        margin-right: 12px;
-      }
-      }
-    border-right: none;
-    transition: width 0.2s;
-
-    :deep(.el-menu-item),
-    :deep(.el-sub-menu__title) {
-      height: 48px;
-      margin: 4px 12px;
-      border-radius: 8px;
-      transition: all 0.2s;
-
-      &:hover {
-        background: var(--el-color-primary-light-9);
-      }
-
-      &.is-active {
-        background: var(--el-color-primary-light-8);
-        color: var(--el-color-primary);
-      }
-    }
-  }
-}
-
-.content-col {
-  .content-scroll {
-    height: calc(100vh - 64px);
-    padding: 24px;
-  }
-
-  .page-content {
-    border-radius: 12px;
-    padding: 0px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    min-height: calc(100% - 48px);
-  }
-}
-
-// 过渡动画
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.fade-slide-enter-from {
-  opacity: 0;
-  transform: translateX(20px);
-}
-
-.fade-slide-leave-to {
-  opacity: 0;
-  transform: translateX(-20px);
+  width: 100%;
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
-  .nav-col {
-    display: none;
+  .header-content {
+    padding: 0 20px;
   }
 
-  .content-col .content-scroll {
-    padding: 16px;
-  }
-
-  .page-content {
-    padding: 16px !important;
+  #content {
+    padding: 20px;
   }
 }
 </style>
