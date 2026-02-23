@@ -1,280 +1,478 @@
 <template>
-  <div class="proxy-detail-page">
-    <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-      <a class="breadcrumb-link" @click="goBack">
-        <el-icon><ArrowLeft /></el-icon>
+  <div
+    class="w-full flex flex-col gap-6 text-zinc-900 dark:text-zinc-100 pb-10"
+  >
+    <nav
+      class="flex items-center text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2"
+    >
+      <a
+        class="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors mr-2"
+        @click="goBack"
+      >
+        <el-icon class="text-lg"><ArrowLeft /></el-icon>
       </a>
       <template v-if="fromClient">
-        <router-link to="/clients" class="breadcrumb-item">客户端</router-link>
-        <span class="breadcrumb-separator">/</span>
-        <router-link :to="`/clients/${fromClient}`" class="breadcrumb-item">{{
-          fromClient
-        }}</router-link>
-        <span class="breadcrumb-separator">/</span>
+        <router-link
+          to="/clients"
+          class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >客户端</router-link
+        >
+        <span class="mx-2.5 text-zinc-300 dark:text-zinc-700">/</span>
+        <router-link
+          :to="`/clients/${fromClient}`"
+          class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >{{ fromClient }}</router-link
+        >
+        <span class="mx-2.5 text-zinc-300 dark:text-zinc-700">/</span>
       </template>
       <template v-else>
-        <router-link to="/proxies" class="breadcrumb-item">隧道</router-link>
-        <span class="breadcrumb-separator">/</span>
+        <router-link
+          to="/proxies"
+          class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >隧道</router-link
+        >
+        <span class="mx-2.5 text-zinc-300 dark:text-zinc-700">/</span>
         <router-link
           v-if="proxy?.clientID"
           :to="clientLink"
-          class="breadcrumb-item"
+          class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
         >
           {{ proxy.user ? `${proxy.user}.${proxy.clientID}` : proxy.clientID }}
         </router-link>
-        <span v-if="proxy?.clientID" class="breadcrumb-separator">/</span>
+        <span
+          v-if="proxy?.clientID"
+          class="mx-2.5 text-zinc-300 dark:text-zinc-700"
+          >/</span
+        >
       </template>
-      <span class="breadcrumb-current">{{ proxyName }}</span>
+      <span class="text-zinc-900 dark:text-zinc-200 font-semibold">{{
+        proxyName
+      }}</span>
     </nav>
 
-    <div v-loading="loading" class="detail-content">
+    <div
+      v-loading="loading"
+      element-loading-background="rgba(0, 0, 0, 0.0)"
+      class="min-h-[400px] flex flex-col gap-6"
+    >
       <template v-if="proxy">
-        <!-- Header Section -->
-        <div class="header-section">
-          <div class="header-main">
-            <div
-              class="proxy-icon"
-              :style="{ background: proxyIconConfig.gradient }"
-            >
-              <el-icon><component :is="proxyIconConfig.icon" /></el-icon>
+        <div
+          class="relative p-6 sm:p-8 bg-white dark:bg-zinc-900 rounded-3xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-6"
+        >
+          <div
+            class="absolute -right-20 -top-20 w-64 h-64 opacity-20 dark:opacity-10 rounded-full blur-3xl pointer-events-none"
+            :style="{ background: proxyIconConfig.gradient }"
+          ></div>
+
+          <div
+            class="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg shrink-0 z-10"
+            :style="{ background: proxyIconConfig.gradient }"
+          >
+            <el-icon><component :is="proxyIconConfig.icon" /></el-icon>
+          </div>
+
+          <div class="flex flex-col gap-3 z-10 min-w-0 flex-1">
+            <div class="flex items-center flex-wrap gap-3">
+              <h1
+                class="text-2xl sm:text-3xl font-black tracking-tight m-0 break-all leading-none"
+              >
+                {{ proxy.name }}
+              </h1>
+              <span
+                class="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/50"
+              >
+                {{ proxy.type.toUpperCase() }}
+              </span>
+              <span
+                class="px-3 py-1 rounded-md text-[11px] font-bold tracking-widest uppercase border"
+                :class="
+                  proxy.status === 'online'
+                    ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+                    : 'bg-zinc-50 text-zinc-500 border-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700/50'
+                "
+              >
+                {{ proxy.status === 'online' ? '在线' : '离线' }}
+              </span>
             </div>
-            <div class="header-info">
-              <div class="header-title-row">
-                <h1 class="proxy-name">{{ proxy.name }}</h1>
-                <span class="type-tag">{{ proxy.type.toUpperCase() }}</span>
-                <span class="status-badge" :class="proxy.status">
-                  {{ proxy.status === 'online' ? '在线' : '离线' }}
-                </span>
-              </div>
-              <div class="header-meta">
-                <router-link
-                  v-if="proxy.clientID"
-                  :to="clientLink"
-                  class="client-link"
+
+            <div class="flex items-center gap-4">
+              <router-link
+                v-if="proxy.clientID"
+                :to="clientLink"
+                class="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+              >
+                <el-icon><Monitor /></el-icon>
+                <span
+                  >客户端:
+                  <span class="text-zinc-700 dark:text-zinc-300 break-all">{{
+                    proxy.user
+                      ? `${proxy.user}.${proxy.clientID}`
+                      : proxy.clientID
+                  }}</span></span
                 >
-                  <el-icon><Monitor /></el-icon>
-                  <span
-                    >客户端ID:
-                    {{
-                      proxy.user
-                        ? `${proxy.user}.${proxy.clientID}`
-                        : proxy.clientID
-                    }}</span
-                  >
-                </router-link>
-              </div>
+              </router-link>
             </div>
           </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-          <div v-if="proxy.port" class="stat-card">
-            <div class="stat-header">
-              <span class="stat-label">端口</span>
-              <div class="stat-icon port">
+        <div
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+        >
+          <div
+            v-if="proxy.port"
+            class="p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm flex flex-col gap-4 group"
+          >
+            <div class="flex justify-between items-start">
+              <span
+                class="text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500"
+                >服务端口</span
+              >
+              <div
+                class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-xl transition-transform group-hover:scale-110"
+              >
                 <el-icon><Connection /></el-icon>
               </div>
             </div>
-            <div class="stat-value">{{ proxy.port }}</div>
+            <span
+              class="text-2xl font-black font-mono text-zinc-900 dark:text-white leading-none"
+              >{{ proxy.port }}</span
+            >
           </div>
-          <div class="stat-card">
-            <div class="stat-header">
-              <span class="stat-label">连接数</span>
-              <div class="stat-icon connections">
+
+          <div
+            class="p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm flex flex-col gap-4 group"
+          >
+            <div class="flex justify-between items-start">
+              <span
+                class="text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500"
+                >当前连接数</span
+              >
+              <div
+                class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xl transition-transform group-hover:scale-110"
+              >
                 <el-icon><DataLine /></el-icon>
               </div>
             </div>
-            <div class="stat-value">{{ proxy.conns }}</div>
+            <span
+              class="text-2xl font-black font-mono text-zinc-900 dark:text-white leading-none"
+              >{{ proxy.conns }}</span
+            >
           </div>
-          <div class="stat-card">
-            <div class="stat-header">
-              <span class="stat-label">入站流量</span>
-              <div class="stat-icon traffic-in">
+
+          <div
+            class="p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm flex flex-col gap-4 group"
+          >
+            <div class="flex justify-between items-start">
+              <span
+                class="text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500"
+                >入站流量</span
+              >
+              <div
+                class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xl transition-transform group-hover:scale-110"
+              >
                 <el-icon><Bottom /></el-icon>
               </div>
             </div>
-            <div class="stat-value">
-              <span class="value-number">{{
-                formatTrafficValue(proxy.trafficIn)
-              }}</span>
-              <span class="value-unit">{{
+            <div class="flex items-baseline gap-1.5">
+              <span
+                class="text-2xl font-black font-mono text-zinc-900 dark:text-white leading-none"
+                >{{ formatTrafficValue(proxy.trafficIn) }}</span
+              >
+              <span class="text-sm font-bold text-zinc-400">{{
                 formatTrafficUnit(proxy.trafficIn)
               }}</span>
             </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-header">
-              <span class="stat-label">出站流量</span>
-              <div class="stat-icon traffic-out">
+
+          <div
+            class="p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm flex flex-col gap-4 group"
+          >
+            <div class="flex justify-between items-start">
+              <span
+                class="text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500"
+                >出站流量</span
+              >
+              <div
+                class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl transition-transform group-hover:scale-110"
+              >
                 <el-icon><Top /></el-icon>
               </div>
             </div>
-            <div class="stat-value">
-              <span class="value-number">{{
-                formatTrafficValue(proxy.trafficOut)
-              }}</span>
-              <span class="value-unit">{{
+            <div class="flex items-baseline gap-1.5">
+              <span
+                class="text-2xl font-black font-mono text-zinc-900 dark:text-white leading-none"
+                >{{ formatTrafficValue(proxy.trafficOut) }}</span
+              >
+              <span class="text-sm font-bold text-zinc-400">{{
                 formatTrafficUnit(proxy.trafficOut)
               }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Status Timeline -->
-        <div class="timeline-card">
-          <div class="timeline-header">
-            <el-icon><DataLine /></el-icon>
-            <h2>状态时间轴</h2>
+        <div
+          class="p-6 sm:p-8 bg-white dark:bg-zinc-900 rounded-3xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm flex flex-col gap-6"
+        >
+          <div class="flex items-center gap-2 text-zinc-900 dark:text-white">
+            <el-icon class="text-indigo-500 text-xl"><DataLine /></el-icon>
+            <h2 class="text-lg font-bold tracking-tight m-0">状态时间轴</h2>
           </div>
-          <div class="timeline-body">
-            <div class="timeline-grid">
-              <div class="timeline-item">
-                <span class="timeline-label">上次启动时间</span>
-                <span class="timeline-value">{{
-                  proxy.lastStartTime || '-'
-                }}</span>
-              </div>
-              <div class="timeline-item">
-                <span class="timeline-label">上次离线时间</span>
-                <span class="timeline-value">{{
-                  proxy.lastCloseTime || '-'
-                }}</span>
-              </div>
+          <div
+            class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-zinc-50 dark:bg-zinc-800/40 rounded-2xl p-5 border border-zinc-100 dark:border-zinc-700/50"
+          >
+            <div class="flex flex-col gap-1.5">
+              <span
+                class="text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500"
+                >上次启动时间</span
+              >
+              <span
+                class="text-[15px] font-medium font-mono text-zinc-800 dark:text-zinc-200"
+                >{{ proxy.lastStartTime || '-' }}</span
+              >
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <span
+                class="text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500"
+                >上次离线时间</span
+              >
+              <span
+                class="text-[15px] font-medium font-mono text-zinc-800 dark:text-zinc-200"
+                >{{ proxy.lastCloseTime || '-' }}</span
+              >
             </div>
           </div>
         </div>
 
-        <!-- Configuration Section -->
-        <div class="config-section">
-          <div class="config-section-header">
-            <el-icon><Setting /></el-icon>
-            <h2>配置</h2>
+        <div class="flex flex-col gap-5">
+          <div
+            class="flex items-center gap-2 px-2 text-zinc-900 dark:text-white"
+          >
+            <el-icon class="text-emerald-500 text-xl"><Setting /></el-icon>
+            <h2 class="text-lg font-bold tracking-tight m-0">高级配置</h2>
           </div>
 
-          <!-- Config Cards Grid -->
-          <div class="config-grid">
-            <div class="config-item-card">
-              <div class="config-item-icon encryption">
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+          >
+            <div
+              class="flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm"
+            >
+              <div
+                class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg shrink-0"
+              >
                 <el-icon><Lock /></el-icon>
               </div>
-              <div class="config-item-content">
-                <span class="config-item-label">加密</span>
-                <span class="config-item-value">{{
-                  proxy.encryption ? '已启用' : '未启用'
-                }}</span>
+              <div class="flex flex-col gap-1 min-w-0">
+                <span
+                  class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+                  >加密</span
+                >
+                <span
+                  class="text-sm font-bold text-zinc-800 dark:text-zinc-200"
+                  >{{ proxy.encryption ? '已启用' : '未启用' }}</span
+                >
               </div>
             </div>
 
-            <div class="config-item-card">
-              <div class="config-item-icon compression">
+            <div
+              class="flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm"
+            >
+              <div
+                class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg shrink-0"
+              >
                 <el-icon><Lightning /></el-icon>
               </div>
-              <div class="config-item-content">
-                <span class="config-item-label">压缩</span>
-                <span class="config-item-value">{{
-                  proxy.compression ? '已启用' : '未启用'
-                }}</span>
+              <div class="flex flex-col gap-1 min-w-0">
+                <span
+                  class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+                  >压缩</span
+                >
+                <span
+                  class="text-sm font-bold text-zinc-800 dark:text-zinc-200"
+                  >{{ proxy.compression ? '已启用' : '未启用' }}</span
+                >
               </div>
             </div>
 
-            <div v-if="proxy.customDomains" class="config-item-card">
-              <div class="config-item-icon domains">
+            <div
+              v-if="proxy.customDomains"
+              class="flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm sm:col-span-2 lg:col-span-1"
+            >
+              <div
+                class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg shrink-0"
+              >
                 <el-icon><Link /></el-icon>
               </div>
-              <div class="config-item-content">
-                <span class="config-item-label">自定义域名</span>
-                <span class="config-item-value">{{ proxy.customDomains }}</span>
+              <div class="flex flex-col gap-1 min-w-0">
+                <span
+                  class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+                  >自定义域名</span
+                >
+                <span
+                  class="text-sm font-bold text-zinc-800 dark:text-zinc-200 break-all"
+                  >{{ proxy.customDomains }}</span
+                >
               </div>
             </div>
 
-            <div v-if="proxy.subdomain" class="config-item-card">
-              <div class="config-item-icon subdomain">
+            <div
+              v-if="proxy.subdomain"
+              class="flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm"
+            >
+              <div
+                class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center text-lg shrink-0"
+              >
                 <el-icon><Link /></el-icon>
               </div>
-              <div class="config-item-content">
-                <span class="config-item-label">子域名</span>
-                <span class="config-item-value">{{ proxy.subdomain }}</span>
+              <div class="flex flex-col gap-1 min-w-0">
+                <span
+                  class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+                  >子域名</span
+                >
+                <span
+                  class="text-sm font-bold text-zinc-800 dark:text-zinc-200 break-all"
+                  >{{ proxy.subdomain }}</span
+                >
               </div>
             </div>
 
-            <div v-if="proxy.locations" class="config-item-card">
-              <div class="config-item-icon locations">
+            <div
+              v-if="proxy.locations"
+              class="flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm"
+            >
+              <div
+                class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg shrink-0"
+              >
                 <el-icon><Location /></el-icon>
               </div>
-              <div class="config-item-content">
-                <span class="config-item-label">位置</span>
-                <span class="config-item-value">{{ proxy.locations }}</span>
+              <div class="flex flex-col gap-1 min-w-0">
+                <span
+                  class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+                  >位置</span
+                >
+                <span
+                  class="text-sm font-bold text-zinc-800 dark:text-zinc-200 break-all"
+                  >{{ proxy.locations }}</span
+                >
               </div>
             </div>
 
-            <div v-if="proxy.hostHeaderRewrite" class="config-item-card">
-              <div class="config-item-icon host">
+            <div
+              v-if="proxy.hostHeaderRewrite"
+              class="flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm"
+            >
+              <div
+                class="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center text-lg shrink-0"
+              >
                 <el-icon><Tickets /></el-icon>
               </div>
-              <div class="config-item-content">
-                <span class="config-item-label">HOST 重定向</span>
-                <span class="config-item-value">{{
-                  proxy.hostHeaderRewrite
-                }}</span>
+              <div class="flex flex-col gap-1 min-w-0">
+                <span
+                  class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+                  >HOST 重定向</span
+                >
+                <span
+                  class="text-sm font-bold text-zinc-800 dark:text-zinc-200 break-all"
+                  >{{ proxy.hostHeaderRewrite }}</span
+                >
               </div>
             </div>
 
-            <div v-if="proxy.multiplexer" class="config-item-card">
-              <div class="config-item-icon multiplexer">
+            <div
+              v-if="proxy.multiplexer"
+              class="flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm"
+            >
+              <div
+                class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg shrink-0"
+              >
                 <el-icon><Cpu /></el-icon>
               </div>
-              <div class="config-item-content">
-                <span class="config-item-label">多路复用</span>
-                <span class="config-item-value">{{ proxy.multiplexer }}</span>
+              <div class="flex flex-col gap-1 min-w-0">
+                <span
+                  class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+                  >多路复用</span
+                >
+                <span
+                  class="text-sm font-bold text-zinc-800 dark:text-zinc-200 break-all"
+                  >{{ proxy.multiplexer }}</span
+                >
               </div>
             </div>
 
-            <div v-if="proxy.routeByHTTPUser" class="config-item-card">
-              <div class="config-item-icon route">
+            <div
+              v-if="proxy.routeByHTTPUser"
+              class="flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 rounded-2xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm"
+            >
+              <div
+                class="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-600 dark:text-pink-400 flex items-center justify-center text-lg shrink-0"
+              >
                 <el-icon><Connection /></el-icon>
               </div>
-              <div class="config-item-content">
-                <span class="config-item-label">用户 HTTP 路由</span>
-                <span class="config-item-value">{{
-                  proxy.routeByHTTPUser
-                }}</span>
+              <div class="flex flex-col gap-1 min-w-0">
+                <span
+                  class="text-xs font-medium text-zinc-400 dark:text-zinc-500"
+                  >用户 HTTP 路由</span
+                >
+                <span
+                  class="text-sm font-bold text-zinc-800 dark:text-zinc-200 break-all"
+                  >{{ proxy.routeByHTTPUser }}</span
+                >
               </div>
             </div>
           </div>
 
-          <!-- Annotations -->
-          <template v-if="proxy.annotations && proxy.annotations.size > 0">
-            <div class="annotations-section">
-              <div
-                v-for="[key, value] in proxy.annotations"
-                :key="key"
-                class="annotation-tag"
-              >
-                {{ key }}: {{ value }}
-              </div>
-            </div>
-          </template>
+          <div
+            v-if="proxy.annotations && proxy.annotations.size > 0"
+            class="flex flex-wrap gap-2 mt-2 px-2"
+          >
+            <span
+              v-for="[key, value] in proxy.annotations"
+              :key="key"
+              class="inline-flex items-center px-3 py-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700/50"
+            >
+              <span class="text-zinc-400 mr-1">{{ key }}:</span> {{ value }}
+            </span>
+          </div>
         </div>
 
-        <!-- Traffic Card -->
-        <div class="traffic-card">
-          <div class="traffic-header">
-            <h2>流量图</h2>
+        <div
+          class="p-6 sm:p-8 bg-white dark:bg-zinc-900 rounded-3xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm flex flex-col gap-6"
+        >
+          <div
+            class="flex items-center gap-2 text-zinc-900 dark:text-white pb-6 border-b border-zinc-100 dark:border-zinc-800/80"
+          >
+            <el-icon class="text-blue-500 text-xl"><DataLine /></el-icon>
+            <h2 class="text-lg font-bold tracking-tight m-0">流量监控</h2>
           </div>
-          <div class="traffic-body">
+          <div class="w-full">
             <Traffic :proxy-name="proxyName" />
           </div>
         </div>
       </template>
 
-      <div v-else-if="!loading" class="not-found">
-        <h2>隧道未找到</h2>
-        <p>隧道不存在或已经被移除</p>
-        <router-link to="/proxies">
-          <el-button type="primary">Back to Proxies</el-button>
-        </router-link>
+      <div
+        v-else-if="!loading"
+        class="flex flex-col items-center justify-center py-20 text-zinc-400 dark:text-zinc-500 gap-5 bg-white/50 dark:bg-zinc-900/50 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 mt-10"
+      >
+        <div
+          class="w-20 h-20 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-inner"
+        >
+          <el-icon class="text-3xl text-zinc-300 dark:text-zinc-600"
+            ><Inbox
+          /></el-icon>
+        </div>
+        <div class="flex flex-col items-center gap-1">
+          <span class="text-lg font-bold text-zinc-700 dark:text-zinc-200"
+            >隧道未找到</span
+          >
+          <span class="text-sm font-medium">隧道不存在或已经被移除</span>
+        </div>
+        <button
+          @click="goBack"
+          class="mt-4 px-6 py-2.5 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-xl transition-colors shadow-md shadow-zinc-900/20 dark:shadow-white/20 border-0 cursor-pointer"
+        >
+          返回列表
+        </button>
       </div>
     </div>
   </div>
@@ -468,518 +666,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.proxy-detail-page {
-}
 
-/* Breadcrumb */
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  margin-bottom: 24px;
-}
-
-.breadcrumb-link {
-  display: flex;
-  align-items: center;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: color 0.2s;
-  margin-right: 4px;
-}
-
-.breadcrumb-link:hover {
-  color: var(--text-primary);
-}
-
-.breadcrumb-item {
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.breadcrumb-item:hover {
-  color: var(--el-color-primary);
-}
-
-.breadcrumb-separator {
-  color: var(--el-border-color);
-}
-
-.breadcrumb-current {
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-/* Header Section */
-.header-section {
-  margin-bottom: 24px;
-}
-
-.header-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.proxy-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 26px;
-  color: white;
-}
-
-.header-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.header-title-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.proxy-name {
-  font-size: 20px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin: 0;
-  line-height: 1.3;
-  word-break: break-all;
-}
-
-.type-tag {
-  font-size: 12px;
-  font-weight: 500;
-  padding: 4px 12px;
-  border-radius: 20px;
-  background: var(--el-fill-color-dark);
-  color: var(--el-text-color-secondary);
-  border: 1px solid var(--el-border-color-lighter);
-}
-
-.status-badge {
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  text-transform: capitalize;
-}
-
-.status-badge.online {
-  background: rgba(34, 197, 94, 0.1);
-  color: #16a34a;
-}
-
-.status-badge.offline {
-  background: var(--hover-bg);
-  color: var(--text-secondary);
-}
-
-html.dark .status-badge.online {
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
-}
-
-.header-meta {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.client-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.client-link:hover {
-  color: var(--el-color-primary);
-}
-
-/* Stats Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  background: var(--el-bg-color);
-  border: 1px solid var(--header-border);
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.stat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.stat-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-}
-
-.stat-icon.port {
-  background: rgba(139, 92, 246, 0.1);
-  color: #8b5cf6;
-}
-
-.stat-icon.connections {
-  background: rgba(168, 85, 247, 0.1);
-  color: #a855f7;
-}
-
-.stat-icon.traffic-in {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-}
-
-.stat-icon.traffic-out {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-}
-
-html.dark .stat-icon.port {
-  background: rgba(139, 92, 246, 0.15);
-}
-
-html.dark .stat-icon.connections {
-  background: rgba(168, 85, 247, 0.15);
-}
-
-html.dark .stat-icon.traffic-in {
-  background: rgba(59, 130, 246, 0.15);
-}
-
-html.dark .stat-icon.traffic-out {
-  background: rgba(34, 197, 94, 0.15);
-}
-
-.stat-value {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.value-number {
-  font-size: 28px;
-  font-weight: 500;
-  color: var(--text-primary);
-  line-height: 1;
-}
-
-.stat-value:not(:has(.value-number)) {
-  font-size: 28px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.value-unit {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-/* Timeline Card */
-.timeline-card {
-  background: var(--el-bg-color);
-  border: 1px solid var(--header-border);
-  border-radius: 12px;
-  margin-bottom: 16px;
-}
-
-.timeline-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 20px;
-  color: var(--text-secondary);
-}
-
-.timeline-header h2 {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.timeline-body {
-  padding: 20px;
-  padding-top: 0;
-}
-
-.timeline-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-  background: var(--el-fill-color-light);
-  border-radius: 10px;
-  padding: 20px 24px;
-}
-
-.timeline-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.timeline-label {
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.timeline-value {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-/* Card Base */
-.traffic-card {
-  background: var(--el-bg-color);
-  border: 1px solid var(--header-border);
-  border-radius: 12px;
-  margin-bottom: 16px;
-}
-
-/* Config Section */
-.config-section {
-  margin-bottom: 24px;
-}
-
-.config-section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 16px;
-  color: var(--text-secondary);
-}
-
-.config-section-header h2 {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-.config-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.config-item-card {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  padding: 20px;
-  background: var(--el-bg-color);
-  border: 1px solid var(--header-border);
-  border-radius: 12px;
-}
-
-.config-item-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.config-item-icon.encryption {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-}
-
-.config-item-icon.compression {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-}
-
-.config-item-icon.domains {
-  background: rgba(168, 85, 247, 0.1);
-  color: #a855f7;
-}
-
-.config-item-icon.subdomain {
-  background: rgba(168, 85, 247, 0.1);
-  color: #a855f7;
-}
-
-.config-item-icon.locations {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-}
-
-.config-item-icon.host {
-  background: rgba(249, 115, 22, 0.1);
-  color: #f97316;
-}
-
-.config-item-icon.multiplexer {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-}
-
-.config-item-icon.route {
-  background: rgba(236, 72, 153, 0.1);
-  color: #ec4899;
-}
-
-html.dark .config-item-icon.encryption,
-html.dark .config-item-icon.compression {
-  background: rgba(34, 197, 94, 0.15);
-}
-
-html.dark .config-item-icon.domains,
-html.dark .config-item-icon.subdomain {
-  background: rgba(168, 85, 247, 0.15);
-}
-
-html.dark .config-item-icon.locations,
-html.dark .config-item-icon.multiplexer {
-  background: rgba(59, 130, 246, 0.15);
-}
-
-html.dark .config-item-icon.host {
-  background: rgba(249, 115, 22, 0.15);
-}
-
-html.dark .config-item-icon.route {
-  background: rgba(236, 72, 153, 0.15);
-}
-
-.config-item-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.config-item-label {
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.config-item-value {
-  font-size: 15px;
-  color: var(--text-primary);
-  font-weight: 500;
-  word-break: break-all;
-}
-
-.annotations-section {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.annotation-tag {
-  display: inline-flex;
-  padding: 6px 12px;
-  background: var(--el-fill-color);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.traffic-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--header-border);
-}
-
-.traffic-header h2 {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin: 0;
-}
-
-/* Traffic Card */
-.traffic-body {
-  padding: 20px;
-}
-
-/* Not Found */
-.not-found {
-  text-align: center;
-  padding: 60px 20px;
-}
-
-.not-found h2 {
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--text-primary);
-  margin: 0 0 8px;
-}
-
-.not-found p {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin: 0 0 20px;
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .config-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .header-main {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .timeline-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

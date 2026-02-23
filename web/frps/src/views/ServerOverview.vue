@@ -1,160 +1,317 @@
 <template>
-  <div class="server-overview">
-    <el-row :gutter="20" class="stats-row">
-      <el-col :xs="24" :sm="12" :lg="6">
-        <StatCard
-          label="客户端"
-          :value="data.clientCounts"
-          type="clients"
-          subtitle="已连接的客户端数量"
-          to="/clients"
-        />
-      </el-col>
-      <el-col :xs="24" :sm="12" :lg="6">
-        <StatCard
-          label="隧道"
-          :value="data.proxyCounts"
-          type="proxies"
-          subtitle="已连接的隧道数"
-          to="/proxies/tcp"
-        />
-      </el-col>
-      <el-col :xs="24" :sm="12" :lg="6">
-        <StatCard
-          label="连接"
-          :value="data.curConns"
-          type="connections"
-          subtitle="隧道被连接总数"
-        />
-      </el-col>
-      <el-col :xs="24" :sm="12" :lg="6">
-        <StatCard
-          label="流量"
-          :value="formatTrafficTotal()"
-          type="traffic"
-          subtitle="今日流量"
-        />
-      </el-col>
-    </el-row>
+  <div class="flex flex-col gap-6 w-full pb-10">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <StatCard
+        label="客户端"
+        :value="data.clientCounts"
+        type="clients"
+        subtitle="已连接的客户端数量"
+        to="/clients"
+      />
+      <StatCard
+        label="隧道"
+        :value="data.proxyCounts"
+        type="proxies"
+        subtitle="已连接的隧道数"
+        to="/proxies/tcp"
+      />
+      <StatCard
+        label="连接"
+        :value="data.curConns"
+        type="connections"
+        subtitle="隧道被连接总数"
+      />
+      <StatCard
+        label="流量"
+        :value="formatTrafficTotal()"
+        type="traffic"
+        subtitle="今日流量"
+      />
+    </div>
 
-    <el-row :gutter="20" class="charts-row">
-      <el-col :xs="24" :md="12">
-        <el-card class="chart-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">节点流量</span>
-              <el-tag size="small" type="info">今日</el-tag>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+      <div
+        class="p-5 sm:p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex flex-col gap-6"
+      >
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-2.5">
+            <span
+              class="w-1.5 h-4 bg-zinc-800 dark:bg-zinc-200 rounded-full"
+            ></span>
+            <h3
+              class="text-[15px] font-bold text-zinc-800 dark:text-zinc-200 tracking-wide m-0"
+            >
+              节点流量监控
+            </h3>
+          </div>
+          <span
+            class="text-[10px] font-bold px-2 py-0.5 border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 rounded uppercase"
+            >Today</span
+          >
+        </div>
+
+        <div
+          class="flex-1 flex flex-col sm:flex-row items-center justify-center gap-8 sm:gap-16"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 border border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-500/5 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center text-lg"
+            >
+              <el-icon><Download /></el-icon>
             </div>
-          </template>
-          <div class="traffic-summary">
-            <div class="traffic-item in">
-              <div class="traffic-icon">
-                <el-icon><Download /></el-icon>
-              </div>
-              <div class="traffic-info">
-                <div class="label">上传</div>
-                <div class="value">
-                  {{ formatFileSize(data.totalTrafficIn) }}
-                </div>
-              </div>
-            </div>
-            <div class="traffic-divider"></div>
-            <div class="traffic-item out">
-              <div class="traffic-icon">
-                <el-icon><Upload /></el-icon>
-              </div>
-              <div class="traffic-info">
-                <div class="label">下载</div>
-                <div class="value">
-                  {{ formatFileSize(data.totalTrafficOut) }}
-                </div>
-              </div>
+            <div class="flex flex-col">
+              <span
+                class="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest"
+                >Upload</span
+              >
+              <span
+                class="text-2xl font-black font-mono tracking-tight text-zinc-800 dark:text-zinc-100"
+                >{{ formatFileSize(data.totalTrafficIn) }}</span
+              >
             </div>
           </div>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :md="12">
-        <el-card class="chart-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span class="card-title">隧道类型</span>
-              <el-tag size="small" type="info">实时</el-tag>
+
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 border border-emerald-100 dark:border-emerald-900 bg-emerald-50/50 dark:bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 rounded-lg flex items-center justify-center text-lg"
+            >
+              <el-icon><Upload /></el-icon>
             </div>
-          </template>
-          <div class="proxy-types-grid">
+            <div class="flex flex-col">
+              <span
+                class="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest"
+                >Download</span
+              >
+              <span
+                class="text-2xl font-black font-mono tracking-tight text-zinc-800 dark:text-zinc-100"
+                >{{ formatFileSize(data.totalTrafficOut) }}</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="p-5 sm:p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex flex-col gap-6"
+      >
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-2.5">
+            <span
+              class="w-1.5 h-4 bg-zinc-800 dark:bg-zinc-200 rounded-full"
+            ></span>
+            <h3
+              class="text-[15px] font-bold text-zinc-800 dark:text-zinc-200 tracking-wide m-0"
+            >
+              活跃隧道分布
+            </h3>
+          </div>
+          <span
+            class="text-[10px] font-bold px-2 py-0.5 border border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 rounded uppercase"
+            >Live</span
+          >
+        </div>
+
+        <div class="flex-1 flex flex-col justify-center">
+          <div
+            v-if="hasActiveProxies"
+            class="grid grid-cols-3 sm:grid-cols-4 gap-3"
+          >
             <div
               v-for="(count, type) in data.proxyTypeCounts"
               :key="type"
-              class="proxy-type-item"
               v-show="count > 0"
+              class="flex flex-col items-center justify-center p-3 border border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/30 rounded-xl"
             >
-              <div class="proxy-type-name">{{ type.toUpperCase() }}</div>
-              <div class="proxy-type-count">{{ count }}</div>
+              <span
+                class="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1"
+                >{{ type }}</span
+              >
+              <span
+                class="text-lg font-black text-zinc-800 dark:text-zinc-200 leading-none"
+                >{{ count }}</span
+              >
             </div>
-            <div v-if="!hasActiveProxies" class="no-data">没有活跃的隧道</div>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-card class="config-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <span class="card-title">节点配置</span>
-          <el-tag size="small" type="success">v{{ data.version }}</el-tag>
-        </div>
-      </template>
-      <div class="config-grid">
-        <div class="config-item">
-          <span class="config-label">服务端口</span>
-          <span class="config-value">{{ data.bindPort }}</span>
-        </div>
-        <div class="config-item" v-if="data.kcpBindPort != 0">
-          <span class="config-label">KCP 服务端口</span>
-          <span class="config-value">{{ data.kcpBindPort }}</span>
-        </div>
-        <div class="config-item" v-if="data.quicBindPort != 0">
-          <span class="config-label">QUIC 服务端口</span>
-          <span class="config-value">{{ data.quicBindPort }}</span>
-        </div>
-        <div class="config-item" v-if="data.vhostHTTPPort != 0">
-          <span class="config-label">HTTP 服务端口</span>
-          <span class="config-value">{{ data.vhostHTTPPort }}</span>
-        </div>
-        <div class="config-item" v-if="data.vhostHTTPSPort != 0">
-          <span class="config-label">HTTPS 服务端口</span>
-          <span class="config-value">{{ data.vhostHTTPSPort }}</span>
-        </div>
-        <div class="config-item" v-if="data.tcpmuxHTTPConnectPort != 0">
-          <span class="config-label">TCPMux 服务端口</span>
-          <span class="config-value">{{ data.tcpmuxHTTPConnectPort }}</span>
-        </div>
-        <div class="config-item" v-if="data.subdomainHost != ''">
-          <span class="config-label">子域名</span>
-          <span class="config-value">{{ data.subdomainHost }}</span>
-        </div>
-        <div class="config-item">
-          <span class="config-label">最大连接池</span>
-          <span class="config-value">{{ data.maxPoolCount }}</span>
-        </div>
-        <div class="config-item">
-          <span class="config-label">最大端口数/客户端</span>
-          <span class="config-value">{{ data.maxPortsPerClient }}</span>
-        </div>
-        <div class="config-item" v-if="data.allowPortsStr != ''">
-          <span class="config-label">可用连接端口</span>
-          <span class="config-value">{{ data.allowPortsStr }}</span>
-        </div>
-        <div class="config-item" v-if="data.tlsForce">
-          <span class="config-label">强制 TLS</span>
-          <el-tag size="small" type="warning">已启用</el-tag>
-        </div>
-        <div class="config-item">
-          <span class="config-label">心跳包超时</span>
-          <span class="config-value">{{ data.heartbeatTimeout }}s</span>
+          <div
+            v-else
+            class="flex flex-col items-center justify-center h-full text-zinc-400 py-6 gap-2"
+          >
+            <el-icon class="text-2xl text-zinc-300 dark:text-zinc-600"
+              ><Box
+            /></el-icon>
+            <span class="text-xs font-medium">暂无活跃隧道</span>
+          </div>
         </div>
       </div>
-    </el-card>
+    </div>
+
+    <div
+      class="p-5 sm:p-6 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl"
+    >
+      <div
+        class="flex justify-between items-center mb-6 border-b border-zinc-100 dark:border-zinc-800/80 pb-4"
+      >
+        <div class="flex items-center gap-2.5">
+          <span
+            class="w-1.5 h-4 bg-zinc-800 dark:bg-zinc-200 rounded-full"
+          ></span>
+          <h3
+            class="text-[15px] font-bold text-zinc-800 dark:text-zinc-200 tracking-wide m-0"
+          >
+            服务端口与配置参数
+          </h3>
+        </div>
+        <span
+          class="text-[11px] font-mono font-bold px-2.5 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-md"
+        >
+          v{{ data.version }}
+        </span>
+      </div>
+
+      <div
+        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-5"
+      >
+        <div class="flex flex-col gap-1">
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >服务端口</span
+          >
+          <span
+            class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200"
+            >{{ data.bindPort }}</span
+          >
+        </div>
+
+        <div v-if="data.kcpBindPort != 0" class="flex flex-col gap-1">
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >KCP 端口</span
+          >
+          <span
+            class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200"
+            >{{ data.kcpBindPort }}</span
+          >
+        </div>
+
+        <div v-if="data.quicBindPort != 0" class="flex flex-col gap-1">
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >QUIC 端口</span
+          >
+          <span
+            class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200"
+            >{{ data.quicBindPort }}</span
+          >
+        </div>
+
+        <div v-if="data.vhostHTTPPort != 0" class="flex flex-col gap-1">
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >HTTP 端口</span
+          >
+          <span
+            class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200"
+            >{{ data.vhostHTTPPort }}</span
+          >
+        </div>
+
+        <div v-if="data.vhostHTTPSPort != 0" class="flex flex-col gap-1">
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >HTTPS 端口</span
+          >
+          <span
+            class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200"
+            >{{ data.vhostHTTPSPort }}</span
+          >
+        </div>
+
+        <div v-if="data.tcpmuxHTTPConnectPort != 0" class="flex flex-col gap-1">
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >TCPMux 端口</span
+          >
+          <span
+            class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200"
+            >{{ data.tcpmuxHTTPConnectPort }}</span
+          >
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >最大连接池</span
+          >
+          <span
+            class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200"
+            >{{ data.maxPoolCount }}</span
+          >
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >单客户端最大端口</span
+          >
+          <span
+            class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200"
+            >{{ data.maxPortsPerClient }}</span
+          >
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >心跳包超时</span
+          >
+          <span
+            class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200"
+            >{{ data.heartbeatTimeout }}s</span
+          >
+        </div>
+
+        <div v-if="data.tlsForce" class="flex flex-col gap-1">
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >强制 TLS</span
+          >
+          <span
+            class="text-[11px] font-bold text-zinc-600 dark:text-zinc-300 mt-0.5"
+            >已启用</span
+          >
+        </div>
+
+        <div
+          v-if="data.subdomainHost != ''"
+          class="flex flex-col gap-1 col-span-2 sm:col-span-1 lg:col-span-2"
+        >
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >根域名 (Subdomain)</span
+          >
+          <span
+            class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200 truncate"
+            :title="data.subdomainHost"
+            >{{ data.subdomainHost }}</span
+          >
+        </div>
+
+        <div
+          v-if="data.allowPortsStr != ''"
+          class="flex flex-col gap-1 col-span-2 sm:col-span-1 lg:col-span-2"
+        >
+          <span
+            class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase"
+            >可用连接端口</span
+          >
+          <span
+            class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200 truncate"
+            :title="data.allowPortsStr"
+            >{{ data.allowPortsStr }}</span
+          >
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -162,7 +319,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { formatFileSize } from '../utils/format'
-import { Download, Upload } from '@element-plus/icons-vue'
+import { Download, Upload, Box } from '@element-plus/icons-vue'
 import StatCard from '../components/StatCard.vue'
 import { getServerInfo } from '../api/server'
 
@@ -242,218 +399,4 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.server-overview {
-  padding: 0;
-}
-
-.stats-row {
-  margin-bottom: 20px;
-}
-
-.charts-row {
-  margin-bottom: 20px;
-}
-
-.chart-card {
-  border-radius: 12px;
-  border: 1px solid #e4e7ed;
-  height: 100%;
-}
-
-html.dark .chart-card {
-  border-color: #3a3d5c;
-  background: #27293d;
-}
-
-.config-card {
-  border-radius: 12px;
-  border: 1px solid #e4e7ed;
-  margin-bottom: 20px;
-}
-
-html.dark .config-card {
-  border-color: #3a3d5c;
-  background: #27293d;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 500;
-  color: #303133;
-}
-
-html.dark .card-title {
-  color: #e5e7eb;
-}
-
-.traffic-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  min-height: 120px;
-  padding: 10px 0;
-}
-
-.traffic-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.traffic-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-}
-
-.traffic-item.in .traffic-icon {
-  background: rgba(84, 112, 198, 0.1);
-  color: #5470c6;
-}
-
-.traffic-item.out .traffic-icon {
-  background: rgba(145, 204, 117, 0.1);
-  color: #91cc75;
-}
-
-.traffic-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.traffic-info .label {
-  font-size: 14px;
-  color: #909399;
-}
-
-.traffic-info .value {
-  font-size: 24px;
-  font-weight: 500;
-  color: #303133;
-}
-
-html.dark .traffic-info .value {
-  color: #e5e7eb;
-}
-
-.traffic-divider {
-  width: 1px;
-  height: 60px;
-  background: #e4e7ed;
-}
-
-html.dark .traffic-divider {
-  background: #3a3d5c;
-}
-
-.proxy-types-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 16px;
-  min-height: 120px;
-  align-content: center;
-  padding: 10px 0;
-}
-
-.proxy-type-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-html.dark .proxy-type-item {
-  background: #1e1e2d;
-}
-
-.proxy-type-name {
-  font-size: 12px;
-  color: #909399;
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.proxy-type-count {
-  font-size: 20px;
-  font-weight: 500;
-  color: #303133;
-}
-
-html.dark .proxy-type-count {
-  color: #e5e7eb;
-}
-
-.no-data {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #909399;
-  font-size: 14px;
-}
-
-.config-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-.config-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  transition: background 0.2s;
-}
-
-html.dark .config-item {
-  background: #1e1e2d;
-}
-
-.config-label {
-  font-size: 12px;
-  color: #909399;
-  font-weight: 500;
-}
-
-html.dark .config-label {
-  color: #9ca3af;
-}
-
-.config-value {
-  font-size: 14px;
-  color: #303133;
-  font-weight: 500;
-  word-break: break-all;
-}
-
-html.dark .config-value {
-  color: #e5e7eb;
-}
-
-@media (max-width: 768px) {
-  .chart-container {
-    height: 250px;
-  }
-
-  .config-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-</style>
+<style scoped></style>

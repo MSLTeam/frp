@@ -1,94 +1,181 @@
 <template>
-  <div class="client-detail-page">
-    <!-- Breadcrumb -->
-    <nav class="breadcrumb">
-      <a class="breadcrumb-link" @click="goBack">
-        <el-icon><ArrowLeft /></el-icon>
+  <div
+    class="w-full flex flex-col gap-6 text-zinc-900 dark:text-zinc-100 pb-10"
+  >
+    <nav
+      class="flex items-center text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-2"
+    >
+      <a
+        class="flex items-center justify-center w-8 h-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer transition-colors mr-2"
+        @click="goBack"
+      >
+        <el-icon class="text-lg"><ArrowLeft /></el-icon>
       </a>
-      <router-link to="/clients" class="breadcrumb-item">客户端</router-link>
-      <span class="breadcrumb-separator">/</span>
-      <span class="breadcrumb-current">{{
+      <router-link
+        to="/clients"
+        class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+        >客户端</router-link
+      >
+      <span class="mx-2.5 text-zinc-300 dark:text-zinc-700">/</span>
+      <span class="text-zinc-900 dark:text-zinc-200 font-semibold">{{
         client?.displayName || route.params.key
       }}</span>
     </nav>
 
-    <div v-loading="loading" class="detail-content">
+    <div
+      v-loading="loading"
+      element-loading-background="rgba(0, 0, 0, 0.0)"
+      class="min-h-[400px] flex flex-col gap-6"
+    >
       <template v-if="client">
-        <!-- Header Card -->
-        <div class="header-card">
-          <div class="header-main">
-            <div class="header-left">
-              <div class="client-avatar">
+        <div
+          class="relative p-6 sm:p-8 bg-white dark:bg-zinc-900 rounded-3xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm overflow-hidden flex flex-col gap-6 sm:gap-8"
+        >
+          <div
+            class="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none transition-all duration-700"
+          ></div>
+
+          <div
+            class="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 z-10"
+          >
+            <div class="flex items-center gap-5 min-w-0">
+              <div
+                class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold shadow-lg shrink-0"
+              >
                 {{ client.displayName.charAt(0).toUpperCase() }}
               </div>
-              <div class="client-info">
-                <h1 class="client-name">{{ client.displayName }}</h1>
-                <div class="client-meta">
-                  <span v-if="client.ip" class="meta-item">{{
-                    client.ip
-                  }}</span>
-                  <span v-if="client.hostname" class="meta-item">{{
-                    client.hostname
-                  }}</span>
+
+              <div class="flex flex-col gap-1.5 min-w-0">
+                <h1
+                  class="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-white m-0 truncate"
+                >
+                  {{ client.displayName }}
+                </h1>
+                <div
+                  class="flex flex-wrap items-center gap-3 text-sm font-medium text-zinc-500 dark:text-zinc-400"
+                >
+                  <span v-if="client.ip" class="flex items-center gap-1">
+                    {{ client.ip }}
+                  </span>
+                  <span
+                    v-if="client.hostname"
+                    class="flex items-center gap-1 border-l border-zinc-300 dark:border-zinc-700 pl-3"
+                  >
+                    {{ client.hostname }}
+                  </span>
                 </div>
               </div>
             </div>
-            <div class="header-right">
+
+            <div class="shrink-0">
               <span
-                class="status-badge"
-                :class="client.online ? 'online' : 'offline'"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold tracking-widest uppercase border"
+                :class="
+                  client.online
+                    ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+                    : 'bg-zinc-50 text-zinc-500 border-zinc-200 dark:bg-zinc-800/50 dark:text-zinc-400 dark:border-zinc-700/50'
+                "
               >
                 {{ client.online ? '在线' : '离线' }}
               </span>
             </div>
           </div>
 
-          <!-- Info Section -->
-          <div class="info-section">
-            <div class="info-item">
-              <span class="info-label">连接数</span>
-              <span class="info-value">{{ totalConnections }}</span>
+          <div
+            class="relative grid grid-cols-2 lg:grid-cols-4 gap-4 bg-zinc-50 dark:bg-zinc-800/40 rounded-2xl p-5 border border-zinc-100 dark:border-zinc-700/50 z-10"
+          >
+            <div class="flex flex-col gap-1.5">
+              <span
+                class="text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500"
+                >连接数</span
+              >
+              <span
+                class="text-[15px] font-semibold font-mono text-zinc-800 dark:text-zinc-200"
+                >{{ totalConnections }}</span
+              >
             </div>
-            <div class="info-item">
-              <span class="info-label">运行 ID</span>
-              <span class="info-value">{{ client.runID }}</span>
+            <div class="flex flex-col gap-1.5 min-w-0">
+              <span
+                class="text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500"
+                >运行 ID</span
+              >
+              <span
+                class="text-[15px] font-semibold font-mono text-zinc-800 dark:text-zinc-200 truncate"
+                :title="client.runID"
+                >{{ client.runID }}</span
+              >
             </div>
-            <div class="info-item">
-              <span class="info-label">首次连接</span>
-              <span class="info-value">{{ client.firstConnectedAgo }}</span>
+            <div class="flex flex-col gap-1.5">
+              <span
+                class="text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500"
+                >首次连接</span
+              >
+              <span
+                class="text-[15px] font-semibold font-mono text-zinc-800 dark:text-zinc-200"
+                >{{ client.firstConnectedAgo }}</span
+              >
             </div>
-            <div class="info-item">
-              <span class="info-label">{{
-                client.online ? '已连接' : '离线'
-              }}</span>
-              <span class="info-value">{{
-                client.online ? client.lastConnectedAgo : client.disconnectedAgo
-              }}</span>
+            <div class="flex flex-col gap-1.5">
+              <span
+                class="text-[11px] font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500"
+                >{{ client.online ? '已连接' : '离线' }}</span
+              >
+              <span
+                class="text-[15px] font-semibold font-mono text-zinc-800 dark:text-zinc-200"
+                >{{
+                  client.online
+                    ? client.lastConnectedAgo
+                    : client.disconnectedAgo
+                }}</span
+              >
             </div>
           </div>
         </div>
 
-        <!-- Proxies Card -->
-        <div class="proxies-card">
-          <div class="proxies-header">
-            <div class="proxies-title">
-              <h2>隧道</h2>
-              <span class="proxies-count">{{ filteredProxies.length }}</span>
+        <div
+          class="p-6 sm:p-8 bg-white dark:bg-zinc-900 rounded-3xl ring-1 ring-zinc-200 dark:ring-zinc-800 shadow-sm flex flex-col gap-6"
+        >
+          <div
+            class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-zinc-100 dark:border-zinc-800/80"
+          >
+            <div class="flex items-center gap-3">
+              <h2
+                class="text-lg font-bold tracking-tight m-0 text-zinc-900 dark:text-white"
+              >
+                所属隧道
+              </h2>
+              <span
+                class="px-2.5 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-xs font-bold text-zinc-500 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/50"
+              >
+                {{ filteredProxies.length }}
+              </span>
             </div>
-            <el-input
-              v-model="proxySearch"
-              placeholder="搜索隧道..."
-              :prefix-icon="Search"
-              clearable
-              class="proxy-search"
-            />
+            <div class="w-full sm:w-64 shrink-0">
+              <el-input
+                v-model="proxySearch"
+                placeholder="搜索隧道..."
+                :prefix-icon="Search"
+                clearable
+                class="custom-el-input w-full"
+              />
+            </div>
           </div>
-          <div class="proxies-body">
-            <div v-if="proxiesLoading" class="loading-state">
-              <el-icon class="is-loading"><Loading /></el-icon>
-              <span>Loading...</span>
+
+          <div class="w-full">
+            <div
+              v-if="proxiesLoading"
+              class="flex flex-col items-center justify-center py-12 text-zinc-400 dark:text-zinc-500 gap-3"
+            >
+              <el-icon class="is-loading text-3xl"><Loading /></el-icon>
+              <span class="text-sm font-medium tracking-widest uppercase"
+                >加载中...</span
+              >
             </div>
-            <div v-else-if="filteredProxies.length > 0" class="proxies-list">
+
+            <div
+              v-else-if="filteredProxies.length > 0"
+              class="flex flex-col gap-4"
+            >
               <ProxyCard
                 v-for="proxy in filteredProxies"
                 :key="proxy.name"
@@ -96,22 +183,52 @@
                 show-type
               />
             </div>
-            <div v-else-if="clientProxies.length > 0" class="empty-state">
-              <p>未找到匹配的隧道 "{{ proxySearch }}"</p>
+
+            <div
+              v-else-if="clientProxies.length > 0"
+              class="flex flex-col items-center justify-center py-16 text-zinc-400 dark:text-zinc-500 gap-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800"
+            >
+              <el-icon class="text-4xl text-zinc-300 dark:text-zinc-600"
+                ><Search
+              /></el-icon>
+              <span class="text-sm font-medium"
+                >未找到匹配的隧道 "{{ proxySearch }}"</span
+              >
             </div>
-            <div v-else class="empty-state">
-              <p>未找到隧道</p>
+
+            <div
+              v-else
+              class="flex flex-col items-center justify-center py-16 text-zinc-400 dark:text-zinc-500 gap-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800"
+            >
+              <span class="text-sm font-medium">该客户端暂无隧道数据</span>
             </div>
           </div>
         </div>
       </template>
 
-      <div v-else-if="!loading" class="not-found">
-        <h2>未找到客户端</h2>
-        <p>此客户端未找到或者已被移除</p>
-        <router-link to="/clients">
-          <el-button type="primary">返回客户端列表</el-button>
-        </router-link>
+      <div
+        v-else-if="!loading"
+        class="flex flex-col items-center justify-center py-20 text-zinc-400 dark:text-zinc-500 gap-5 bg-white/50 dark:bg-zinc-900/50 rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 mt-10"
+      >
+        <div
+          class="w-20 h-20 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shadow-inner"
+        >
+          <el-icon class="text-3xl text-zinc-300 dark:text-zinc-600"
+            ><Search
+          /></el-icon>
+        </div>
+        <div class="flex flex-col items-center gap-1">
+          <span class="text-lg font-bold text-zinc-700 dark:text-zinc-200"
+            >客户端未找到</span
+          >
+          <span class="text-sm font-medium">此客户端不存在或已被移除</span>
+        </div>
+        <button
+          @click="goBack"
+          class="mt-4 px-6 py-2.5 bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-bold rounded-xl transition-colors shadow-md shadow-zinc-900/20 dark:shadow-white/20 border-0 cursor-pointer"
+        >
+          返回列表
+        </button>
       </div>
     </div>
   </div>
