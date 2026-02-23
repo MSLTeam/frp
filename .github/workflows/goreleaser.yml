@@ -32,6 +32,8 @@ jobs:
       - name: Make All
         run: |
           ./package.sh
+      - name: 🧹 清理 Git 脏状态 (专治各种不服)
+        run: git checkout .
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
