@@ -255,7 +255,11 @@
           >
           <span
             class="text-sm font-mono font-medium text-zinc-800 dark:text-zinc-200"
-            >{{ data.maxPortsPerClient }}</span
+            >{{
+              data.maxPortsPerClient === 'no limit'
+                ? '无限制'
+                : data.maxPortsPerClient
+            }}</span
           >
         </div>
 

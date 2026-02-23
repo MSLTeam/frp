@@ -135,7 +135,11 @@
       id="content"
       class="flex-1 w-full px-4 sm:px-6 md:px-8 py-6 sm:py-8 box-border"
     >
-      <router-view></router-view>
+      <router-view v-slot="{ Component }">
+        <transition name="page-fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </main>
   </div>
 </template>
@@ -179,5 +183,37 @@ const currentRouteName = computed(() => {
 .custom-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* 隐藏横向滚动的滚动条但保留滚动功能 */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.custom-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.25s ease;
+}
+
+/* 新页面进场前的初始状态：轻微向下偏移、缩小、模糊、透明 */
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px) scale(0.99);
+  filter: blur(4px);
+}
+
+/* 老页面退场后的最终状态：轻微向上偏移、缩小、模糊、透明 */
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.99);
+  filter: blur(4px);
 }
 </style>
