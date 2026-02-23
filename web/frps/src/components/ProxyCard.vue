@@ -11,7 +11,7 @@
           <span
             class="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
           >
-            {{ proxy.name }}
+            {{ formatSafeText(proxy.name) }}
           </span>
           <span
             v-if="showType"
@@ -51,11 +51,19 @@
             <span
               class="text-[13px] font-semibold text-zinc-700 dark:text-zinc-300 break-all"
               :title="
-                proxy.user ? `${proxy.user}.${proxy.clientID}` : proxy.clientID
+                formatSafeText(
+                  proxy.user
+                    ? `${proxy.user}.${proxy.clientID}`
+                    : proxy.clientID,
+                )
               "
             >
               {{
-                proxy.user ? `${proxy.user}.${proxy.clientID}` : proxy.clientID
+                formatSafeText(
+                  proxy.user
+                    ? `${proxy.user}.${proxy.clientID}`
+                    : proxy.clientID,
+                )
               }}
             </span>
           </div>
@@ -119,6 +127,16 @@ interface Props {
 
 const props = defineProps<Props>()
 const route = useRoute()
+
+const formatSafeText = (text: string | undefined) => {
+  if (!text) return ''
+  const match = text.match(/^.*-(\d+)\.(.+)$/)
+  if (match) {
+    const uid = parseInt(match[1]) - 10000
+    return `UID:${uid} · ${match[2]}`
+  }
+  return text
+}
 
 const proxyLink = computed(() => {
   const base = `/proxy/${props.proxy.name}`

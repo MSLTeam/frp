@@ -28,7 +28,7 @@
               <el-option label="全部客户端" value="" />
               <el-option
                 v-if="clientIDFilter && !selectedClientInList"
-                :label="`${userFilter ? userFilter + '.' : ''}${clientIDFilter} (not found)`"
+                :label="`${formatSafeText(userFilter ? userFilter + '.' + clientIDFilter : clientIDFilter)} (离线)`"
                 :value="selectedClientKey"
                 style="color: var(--el-color-warning); font-style: italic"
               />
@@ -155,6 +155,22 @@ import { Client } from '../utils/client'
 const route = useRoute()
 const router = useRouter()
 
+const formatSafeText = (text: string | undefined | string[]) => {
+  if (!text) return ''
+  const str = String(text)
+  const matchWithSuffix = str.match(/^.*-(\d+)\.(.+)$/)
+  if (matchWithSuffix) {
+    const uid = parseInt(matchWithSuffix[1]) - 10000
+    return `UID:${uid} · ${matchWithSuffix[2]}`
+  }
+  const matchTokenOnly = str.match(/^.*-(\d+)$/)
+  if (matchTokenOnly) {
+    const uid = parseInt(matchTokenOnly[1]) - 10000
+    return `UID:${uid}`
+  }
+  return str
+}
+
 const proxyTypes = [
   { label: 'TCP', value: 'tcp' },
   { label: 'UDP', value: 'udp' },
@@ -175,12 +191,15 @@ const userFilter = ref((route.query.user as string) || '')
 
 const clientOptions = computed(() => {
   return clients.value
-    .map((c) => ({
-      key: c.key,
-      clientID: c.clientID,
-      user: c.user,
-      label: c.user ? `${c.user}.${c.clientID}` : c.clientID,
-    }))
+    .map((c) => {
+      const rawLabel = c.user ? `${c.user}.${c.clientID}` : c.clientID
+      return {
+        key: c.key,
+        clientID: c.clientID,
+        user: c.user,
+        label: formatSafeText(rawLabel), // 在这里对下拉显示的文字进行格式化
+      }
+    })
     .sort((a, b) => a.label.localeCompare(b.label))
 })
 

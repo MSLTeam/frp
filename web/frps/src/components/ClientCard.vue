@@ -30,7 +30,7 @@
             <span
               class="text-base font-bold text-zinc-900 dark:text-zinc-100 break-all leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors"
             >
-              {{ client.displayName }}
+              {{ formatSafeText(client.displayName) }}
             </span>
             <span
               v-if="client.hostname"
@@ -105,6 +105,24 @@ interface Props {
 const props = defineProps<Props>()
 const router = useRouter()
 
+const formatSafeText = (text: string | undefined) => {
+  if (!text) return ''
+
+  const matchWithSuffix = text.match(/^.*-(\d+)\.(.+)$/)
+  if (matchWithSuffix) {
+    const uid = parseInt(matchWithSuffix[1]) - 10000
+    return `UID:${uid} · ${matchWithSuffix[2]}`
+  }
+
+  const matchTokenOnly = text.match(/^.*-(\d+)$/)
+  if (matchTokenOnly) {
+    const uid = parseInt(matchTokenOnly[1]) - 10000
+    return `UID:${uid}`
+  }
+
+  return text
+}
+
 const viewDetail = () => {
   router.push({
     name: 'ClientDetail',
@@ -113,6 +131,4 @@ const viewDetail = () => {
 }
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

@@ -18,7 +18,7 @@
       >
       <span class="mx-2 text-zinc-300 dark:text-zinc-700">/</span>
       <span class="text-zinc-800 dark:text-zinc-200 font-semibold">{{
-        client?.displayName || route.params.key
+        formatSafeText(client?.displayName || route.params.key)
       }}</span>
     </nav>
 
@@ -35,14 +35,14 @@
             <div
               class="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shrink-0 border bg-zinc-50 border-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-300"
             >
-              {{ client.displayName.charAt(0).toUpperCase() }}
+              {{ formatSafeText(client.displayName).charAt(0).toUpperCase() }}
             </div>
 
             <div class="flex flex-col min-w-0">
               <h1
                 class="text-xl sm:text-2xl font-bold tracking-tight m-0 truncate text-zinc-800 dark:text-zinc-100 leading-tight"
               >
-                {{ client.displayName }}
+                {{ formatSafeText(client.displayName) }}
               </h1>
               <div
                 class="flex items-center gap-2.5 mt-1.5 text-[13px] font-medium text-zinc-500 dark:text-zinc-400"
@@ -254,6 +254,25 @@ const route = useRoute()
 const router = useRouter()
 const client = ref<Client | null>(null)
 const loading = ref(true)
+
+const formatSafeText = (text: string | undefined | string[]) => {
+  if (!text) return ''
+  const str = String(text)
+
+  const matchWithSuffix = str.match(/^.*-(\d+)\.(.+)$/)
+  if (matchWithSuffix) {
+    const uid = parseInt(matchWithSuffix[1]) - 10000
+    return `UID:${uid} · ${matchWithSuffix[2]}`
+  }
+
+  const matchTokenOnly = str.match(/^.*-(\d+)$/)
+  if (matchTokenOnly) {
+    const uid = parseInt(matchTokenOnly[1]) - 10000
+    return `UID:${uid}`
+  }
+
+  return str
+}
 
 const goBack = () => {
   if (window.history.length > 1) {

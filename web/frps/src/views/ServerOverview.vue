@@ -62,7 +62,7 @@
             <div class="flex flex-col">
               <span
                 class="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest"
-                >Upload</span
+                >In</span
               >
               <span
                 class="text-2xl font-black font-mono tracking-tight text-zinc-800 dark:text-zinc-100"
@@ -80,7 +80,7 @@
             <div class="flex flex-col">
               <span
                 class="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest"
-                >Download</span
+                >Out</span
               >
               <span
                 class="text-2xl font-black font-mono tracking-tight text-zinc-800 dark:text-zinc-100"

@@ -37,7 +37,17 @@
           :to="clientLink"
           class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
         >
-          {{ proxy.user ? `${proxy.user}.${proxy.clientID}` : proxy.clientID }}
+          <router-link
+            v-if="proxy?.clientID"
+            :to="clientLink"
+            class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          >
+            {{
+              formatSafeText(
+                proxy.user ? `${proxy.user}.${proxy.clientID}` : proxy.clientID,
+              )
+            }}
+          </router-link>
         </router-link>
         <span
           v-if="proxy?.clientID"
@@ -46,7 +56,7 @@
         >
       </template>
       <span class="text-zinc-800 dark:text-zinc-200 font-semibold">{{
-        proxyName
+        formatSafeText(proxyName)
       }}</span>
     </nav>
 
@@ -70,7 +80,7 @@
               <h1
                 class="text-xl sm:text-2xl font-bold tracking-tight m-0 break-all leading-none text-zinc-800 dark:text-zinc-100"
               >
-                {{ proxy.name }}
+                {{ formatSafeText(proxy.name) }}
               </h1>
               <span
                 class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700"
@@ -99,9 +109,11 @@
                 <span
                   >归属:
                   <span class="text-zinc-700 dark:text-zinc-300 font-mono">{{
-                    proxy.user
-                      ? `${proxy.user}.${proxy.clientID}`
-                      : proxy.clientID
+                    formatSafeText(
+                      proxy.user
+                        ? `${proxy.user}.${proxy.clientID}`
+                        : proxy.clientID,
+                    )
                   }}</span></span
                 >
               </router-link>
@@ -420,7 +432,6 @@ import {
   Lock,
   Promotion,
   Grid,
-  Setting,
   Cpu,
   Lightning,
   Tickets,
@@ -451,6 +462,25 @@ const fromClient = computed(() => {
 })
 const proxy = ref<BaseProxy | null>(null)
 const loading = ref(true)
+
+const formatSafeText = (text: string | undefined | string[]) => {
+  if (!text) return ''
+  const str = String(text)
+
+  const matchWithSuffix = str.match(/^.*-(\d+)\.(.+)$/)
+  if (matchWithSuffix) {
+    const uid = parseInt(matchWithSuffix[1]) - 10000
+    return `UID:${uid} · ${matchWithSuffix[2]}`
+  }
+
+  const matchTokenOnly = str.match(/^.*-(\d+)$/)
+  if (matchTokenOnly) {
+    const uid = parseInt(matchTokenOnly[1]) - 10000
+    return `UID:${uid}`
+  }
+
+  return str
+}
 
 const goBack = () => {
   if (window.history.length > 1) {
