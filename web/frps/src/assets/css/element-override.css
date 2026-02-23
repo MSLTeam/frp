@@ -1,0 +1,85 @@
+/* src/assets/css/element-override.css */
+
+/* 1. 告诉 Tailwind v4：请在这个文件里解析 Tailwind 的工具类和变量，但不要重复打包基础样式 */
+@reference "tailwindcss";
+
+/* 2. 使用 Tailwind v4 原生暴露的 var(--color-xxx) 变量 */
+.theme-switch {
+    --el-switch-on-color: var(--color-zinc-800);
+    --el-switch-off-color: var(--color-zinc-100);
+    --el-switch-border-color: var(--color-zinc-200);
+}
+
+html.dark .theme-switch {
+    --el-switch-off-color: var(--color-zinc-900);
+    --el-switch-border-color: var(--color-zinc-800);
+}
+
+/* 3. 使用 Tailwind v4 的 important 语法：在原子类前面加 ! */
+.theme-switch .el-switch__core .el-switch__inner .el-icon {
+    @apply !text-zinc-500;
+}
+
+/* src/assets/css/element-override.css 追加内容 */
+
+/* ======================================================
+   表单与按钮组件魔改 (卡片/拟态风格)
+   可以在全局任何 el-input, el-select, el-button 上挂载 custom-xxx 类名来使用
+   ====================================================== */
+
+/* --- Input & Select 共同体 --- */
+.custom-el-input .el-input__wrapper,
+.custom-el-select .el-select__wrapper {
+    @apply !bg-zinc-50 dark:!bg-zinc-800/50 !rounded-2xl !border !border-zinc-200 dark:!border-zinc-700/50 !shadow-none !h-12 !text-sm !font-medium transition-all duration-300;
+}
+
+/* Hover & Focus 状态 */
+.custom-el-input .el-input__wrapper:hover,
+.custom-el-select .el-select__wrapper:hover,
+.custom-el-input .el-input__wrapper.is-focus,
+.custom-el-select .el-select__wrapper.is-focused {
+    @apply !bg-white dark:!bg-zinc-900 !border-indigo-500/50 !ring-1 !ring-indigo-500/20 !shadow-sm;
+}
+
+/* 文本与占位符 */
+.custom-el-input .el-input__inner {
+    @apply !text-zinc-900 dark:!text-zinc-100 !font-medium;
+}
+.custom-el-input .el-input__inner::placeholder {
+    @apply !text-zinc-400 dark:!text-zinc-500;
+}
+
+/* --- 按钮风格微调 --- */
+.custom-btn {
+    @apply !bg-zinc-100 dark:!bg-zinc-800 !border-none !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 hover:!text-zinc-900 dark:hover:!text-white transition-colors !h-9 !px-4 !font-semibold;
+}
+
+.custom-btn-danger {
+    @apply !border !border-rose-200 dark:!border-rose-900/50 !bg-rose-50 dark:!bg-rose-500/10 !text-rose-600 dark:!text-rose-400 hover:!bg-rose-500 hover:!text-white dark:hover:!bg-rose-600 dark:hover:!text-white transition-colors !h-9 !px-4 !font-semibold;
+}
+
+/* --- Element Plus Loading 样式暗黑模式适配 --- */
+.el-loading-mask {
+    @apply !rounded-2xl;
+    transition: background-color 0.3s;
+}
+
+/* 注意：这里用 html.dark 直接挂载，完美配合你 App.vue 里的主题开关 */
+html.dark .el-loading-mask {
+    background-color: rgba(24, 24, 27, 0.6) !important; /* zinc-900 with opacity */
+}
+
+/* --- 全局 Input & Select 统一样式深度覆盖 (无缝复刻老项目) --- */
+html.dark .el-input__wrapper,
+html.dark .el-select__wrapper {
+    @apply !bg-zinc-900 !shadow-[0_0_0_1px_#27272a_inset];
+}
+
+html.dark .el-input__wrapper:hover,
+html.dark .el-select__wrapper:hover {
+    @apply !shadow-[0_0_0_1px_#3f3f46_inset];
+}
+
+html.dark .el-input__inner {
+    @apply !text-zinc-200;
+}

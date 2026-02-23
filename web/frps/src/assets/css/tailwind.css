@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* 配置 Tailwind 主题变量 */
+@theme {
+    /* 重写 font-sans（全局主字体）：
+      优先调用系统原生 UI 字体 -> 苹果英文字体 -> 苹果中文字体 -> 微软中文字体 -> 安卓/Linux 字体
+    */
+    --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+
+    /* 重写 font-mono（等宽字体，用于面板里的数据、IP、端口，极其重要！）：
+      优先调用苹果旧版/新版代码字体 -> 微软代码字体 -> 通用等宽
+    */
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* 强制让整个应用的字体渲染更平滑（抗锯齿） */
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
