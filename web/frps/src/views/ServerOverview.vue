@@ -3,36 +3,36 @@
     <el-row :gutter="20" class="stats-row">
       <el-col :xs="24" :sm="12" :lg="6">
         <StatCard
-          label="Clients"
+          label="客户端"
           :value="data.clientCounts"
           type="clients"
-          subtitle="Connected clients"
+          subtitle="已连接的客户端数量"
           to="/clients"
         />
       </el-col>
       <el-col :xs="24" :sm="12" :lg="6">
         <StatCard
-          label="Proxies"
+          label="隧道"
           :value="data.proxyCounts"
           type="proxies"
-          subtitle="Active proxies"
+          subtitle="已连接的隧道数"
           to="/proxies/tcp"
         />
       </el-col>
       <el-col :xs="24" :sm="12" :lg="6">
         <StatCard
-          label="Connections"
+          label="连接"
           :value="data.curConns"
           type="connections"
-          subtitle="Current connections"
+          subtitle="隧道被连接总数"
         />
       </el-col>
       <el-col :xs="24" :sm="12" :lg="6">
         <StatCard
-          label="Traffic"
+          label="流量"
           :value="formatTrafficTotal()"
           type="traffic"
-          subtitle="Total today"
+          subtitle="今日流量"
         />
       </el-col>
     </el-row>
@@ -42,8 +42,8 @@
         <el-card class="chart-card" shadow="hover">
           <template #header>
             <div class="card-header">
-              <span class="card-title">Network Traffic</span>
-              <el-tag size="small" type="info">Today</el-tag>
+              <span class="card-title">节点流量</span>
+              <el-tag size="small" type="info">今日</el-tag>
             </div>
           </template>
           <div class="traffic-summary">
@@ -52,7 +52,7 @@
                 <el-icon><Download /></el-icon>
               </div>
               <div class="traffic-info">
-                <div class="label">Inbound</div>
+                <div class="label">上传</div>
                 <div class="value">
                   {{ formatFileSize(data.totalTrafficIn) }}
                 </div>
@@ -64,7 +64,7 @@
                 <el-icon><Upload /></el-icon>
               </div>
               <div class="traffic-info">
-                <div class="label">Outbound</div>
+                <div class="label">下载</div>
                 <div class="value">
                   {{ formatFileSize(data.totalTrafficOut) }}
                 </div>
@@ -77,8 +77,8 @@
         <el-card class="chart-card" shadow="hover">
           <template #header>
             <div class="card-header">
-              <span class="card-title">Proxy Types</span>
-              <el-tag size="small" type="info">Now</el-tag>
+              <span class="card-title">隧道类型</span>
+              <el-tag size="small" type="info">实时</el-tag>
             </div>
           </template>
           <div class="proxy-types-grid">
@@ -91,9 +91,7 @@
               <div class="proxy-type-name">{{ type.toUpperCase() }}</div>
               <div class="proxy-type-count">{{ count }}</div>
             </div>
-            <div v-if="!hasActiveProxies" class="no-data">
-              No active proxies
-            </div>
+            <div v-if="!hasActiveProxies" class="no-data">没有活跃的隧道</div>
           </div>
         </el-card>
       </el-col>
@@ -102,57 +100,57 @@
     <el-card class="config-card" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span class="card-title">Server Configuration</span>
+          <span class="card-title">节点配置</span>
           <el-tag size="small" type="success">v{{ data.version }}</el-tag>
         </div>
       </template>
       <div class="config-grid">
         <div class="config-item">
-          <span class="config-label">Bind Port</span>
+          <span class="config-label">服务端口</span>
           <span class="config-value">{{ data.bindPort }}</span>
         </div>
         <div class="config-item" v-if="data.kcpBindPort != 0">
-          <span class="config-label">KCP Port</span>
+          <span class="config-label">KCP 服务端口</span>
           <span class="config-value">{{ data.kcpBindPort }}</span>
         </div>
         <div class="config-item" v-if="data.quicBindPort != 0">
-          <span class="config-label">QUIC Port</span>
+          <span class="config-label">QUIC 服务端口</span>
           <span class="config-value">{{ data.quicBindPort }}</span>
         </div>
         <div class="config-item" v-if="data.vhostHTTPPort != 0">
-          <span class="config-label">HTTP Port</span>
+          <span class="config-label">HTTP 服务端口</span>
           <span class="config-value">{{ data.vhostHTTPPort }}</span>
         </div>
         <div class="config-item" v-if="data.vhostHTTPSPort != 0">
-          <span class="config-label">HTTPS Port</span>
+          <span class="config-label">HTTPS 服务端口</span>
           <span class="config-value">{{ data.vhostHTTPSPort }}</span>
         </div>
         <div class="config-item" v-if="data.tcpmuxHTTPConnectPort != 0">
-          <span class="config-label">TCPMux Port</span>
+          <span class="config-label">TCPMux 服务端口</span>
           <span class="config-value">{{ data.tcpmuxHTTPConnectPort }}</span>
         </div>
         <div class="config-item" v-if="data.subdomainHost != ''">
-          <span class="config-label">Subdomain Host</span>
+          <span class="config-label">子域名</span>
           <span class="config-value">{{ data.subdomainHost }}</span>
         </div>
         <div class="config-item">
-          <span class="config-label">Max Pool Count</span>
+          <span class="config-label">最大连接池</span>
           <span class="config-value">{{ data.maxPoolCount }}</span>
         </div>
         <div class="config-item">
-          <span class="config-label">Max Ports/Client</span>
+          <span class="config-label">最大端口数/客户端</span>
           <span class="config-value">{{ data.maxPortsPerClient }}</span>
         </div>
         <div class="config-item" v-if="data.allowPortsStr != ''">
-          <span class="config-label">Allow Ports</span>
+          <span class="config-label">可用连接端口</span>
           <span class="config-value">{{ data.allowPortsStr }}</span>
         </div>
         <div class="config-item" v-if="data.tlsForce">
-          <span class="config-label">TLS Force</span>
-          <el-tag size="small" type="warning">Enabled</el-tag>
+          <span class="config-label">强制 TLS</span>
+          <el-tag size="small" type="warning">已启用</el-tag>
         </div>
         <div class="config-item">
-          <span class="config-label">Heartbeat Timeout</span>
+          <span class="config-label">心跳包超时</span>
           <span class="config-value">{{ data.heartbeatTimeout }}s</span>
         </div>
       </div>

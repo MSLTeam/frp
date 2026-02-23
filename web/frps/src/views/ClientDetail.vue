@@ -5,7 +5,7 @@
       <a class="breadcrumb-link" @click="goBack">
         <el-icon><ArrowLeft /></el-icon>
       </a>
-      <router-link to="/clients" class="breadcrumb-item">Clients</router-link>
+      <router-link to="/clients" class="breadcrumb-item">客户端</router-link>
       <span class="breadcrumb-separator">/</span>
       <span class="breadcrumb-current">{{
         client?.displayName || route.params.key
@@ -38,7 +38,7 @@
                 class="status-badge"
                 :class="client.online ? 'online' : 'offline'"
               >
-                {{ client.online ? 'Online' : 'Offline' }}
+                {{ client.online ? '在线' : '离线' }}
               </span>
             </div>
           </div>
@@ -46,20 +46,20 @@
           <!-- Info Section -->
           <div class="info-section">
             <div class="info-item">
-              <span class="info-label">Connections</span>
+              <span class="info-label">连接数</span>
               <span class="info-value">{{ totalConnections }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Run ID</span>
+              <span class="info-label">运行 ID</span>
               <span class="info-value">{{ client.runID }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">First Connected</span>
+              <span class="info-label">首次连接</span>
               <span class="info-value">{{ client.firstConnectedAgo }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">{{
-                client.online ? 'Connected' : 'Disconnected'
+                client.online ? '已连接' : '离线'
               }}</span>
               <span class="info-value">{{
                 client.online ? client.lastConnectedAgo : client.disconnectedAgo
@@ -72,12 +72,12 @@
         <div class="proxies-card">
           <div class="proxies-header">
             <div class="proxies-title">
-              <h2>Proxies</h2>
+              <h2>隧道</h2>
               <span class="proxies-count">{{ filteredProxies.length }}</span>
             </div>
             <el-input
               v-model="proxySearch"
-              placeholder="Search proxies..."
+              placeholder="搜索隧道..."
               :prefix-icon="Search"
               clearable
               class="proxy-search"
@@ -97,20 +97,20 @@
               />
             </div>
             <div v-else-if="clientProxies.length > 0" class="empty-state">
-              <p>No proxies match "{{ proxySearch }}"</p>
+              <p>未找到匹配的隧道 "{{ proxySearch }}"</p>
             </div>
             <div v-else class="empty-state">
-              <p>No proxies found</p>
+              <p>未找到隧道</p>
             </div>
           </div>
         </div>
       </template>
 
       <div v-else-if="!loading" class="not-found">
-        <h2>Client not found</h2>
-        <p>The client doesn't exist or has been removed.</p>
+        <h2>未找到客户端</h2>
+        <p>此客户端未找到或者已被移除</p>
         <router-link to="/clients">
-          <el-button type="primary">Back to Clients</el-button>
+          <el-button type="primary">返回客户端列表</el-button>
         </router-link>
       </div>
     </div>

@@ -33,7 +33,7 @@
 
     <div class="card-action">
       <div class="status-badge" :class="client.online ? 'online' : 'offline'">
-        {{ client.online ? 'Online' : 'Offline' }}
+        {{ client.online ? '在线' : '离线' }}
       </div>
       <el-icon class="arrow-icon"><ArrowRight /></el-icon>
     </div>

@@ -16,7 +16,7 @@
         <div v-for="(item, index) in chartData" :key="index" class="day-column">
           <div class="bars-group">
             <el-tooltip
-              :content="`In: ${formatFileSize(item.in)}`"
+              :content="`入站: ${formatFileSize(item.in)}`"
               placement="top"
             >
               <div
@@ -25,7 +25,7 @@
               ></div>
             </el-tooltip>
             <el-tooltip
-              :content="`Out: ${formatFileSize(item.out)}`"
+              :content="`出站: ${formatFileSize(item.out)}`"
               placement="top"
             >
               <div
@@ -41,11 +41,11 @@
 
     <!-- Legend -->
     <div v-if="!loading && chartData.length > 0" class="legend">
-      <div class="legend-item"><span class="dot in"></span> Traffic In</div>
-      <div class="legend-item"><span class="dot out"></span> Traffic Out</div>
+      <div class="legend-item"><span class="dot in"></span>入站流量</div>
+      <div class="legend-item"><span class="dot out"></span>出站流量</div>
     </div>
 
-    <el-empty v-else-if="!loading" description="No traffic data" />
+    <el-empty v-else-if="!loading" description="无流量数据" />
   </div>
 </template>
 

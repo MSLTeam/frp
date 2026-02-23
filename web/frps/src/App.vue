@@ -5,11 +5,11 @@
         <div class="header-top">
           <div class="brand-section">
             <div class="logo-wrapper">
-              <LogoIcon class="logo-icon" />
+              <img src="./assets/icons/msl-user.png" class="logo-icon" />
             </div>
             <span class="divider">/</span>
-            <span class="brand-name">frp</span>
-            <span class="badge server-badge">Server</span>
+            <span class="brand-name">MSLFrp</span>
+            <span class="badge server-badge">节点控制台</span>
             <span class="badge" v-if="currentRouteName">{{
               currentRouteName
             }}</span>
@@ -18,7 +18,7 @@
           <div class="header-controls">
             <a
               class="github-link"
-              href="https://github.com/fatedier/frp"
+              href="https://github.com/MSLTeam/frp"
               target="_blank"
               aria-label="GitHub"
             >
@@ -36,16 +36,16 @@
 
         <nav class="nav-bar">
           <router-link to="/" class="nav-link" active-class="active"
-            >Overview</router-link
+            >仪表盘</router-link
           >
           <router-link to="/clients" class="nav-link" active-class="active"
-            >Clients</router-link
+            >客户端</router-link
           >
           <router-link
             to="/proxies"
             class="nav-link"
             :class="{ active: route.path.startsWith('/proxies') }"
-            >Proxies</router-link
+            >隧道</router-link
           >
         </nav>
       </div>
@@ -63,15 +63,14 @@ import { useRoute } from 'vue-router'
 import { useDark } from '@vueuse/core'
 import { Moon, Sunny } from '@element-plus/icons-vue'
 import GitHubIcon from './assets/icons/github.svg?component'
-import LogoIcon from './assets/icons/logo.svg?component'
 
 const route = useRoute()
 const isDark = useDark()
 
 const currentRouteName = computed(() => {
-  if (route.path === '/') return 'Overview'
-  if (route.path.startsWith('/clients')) return 'Clients'
-  if (route.path.startsWith('/proxies')) return 'Proxies'
+  if (route.path === '/') return '仪表盘'
+  if (route.path.startsWith('/clients')) return '客户端'
+  if (route.path.startsWith('/proxies')) return '隧道数'
   return ''
 })
 </script>

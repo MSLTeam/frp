@@ -3,25 +3,25 @@
     <div class="page-header">
       <div class="header-top">
         <div class="title-section">
-          <h1 class="page-title">Proxies</h1>
-          <p class="page-subtitle">View and manage all proxy configurations</p>
+          <h1 class="page-title">隧道</h1>
+          <p class="page-subtitle">查询所有隧道的状态</p>
         </div>
 
         <div class="actions-section">
           <el-button :icon="Refresh" class="action-btn" @click="fetchData"
-            >Refresh</el-button
+            >刷新</el-button
           >
 
           <el-popconfirm
-            title="Clear all offline proxies?"
+            title="确定清理所有离线隧道？"
             width="220"
-            confirm-button-text="Clear"
-            cancel-button-text="Cancel"
+            confirm-button-text="清理"
+            cancel-button-text="取消"
             @confirm="clearOfflineProxies"
           >
             <template #reference>
               <el-button :icon="Delete" class="action-btn" type="danger" plain
-                >Clear Offline</el-button
+                >清理离线隧道</el-button
               >
             </template>
           </el-popconfirm>
@@ -32,7 +32,7 @@
         <div class="search-row">
           <el-input
             v-model="searchText"
-            placeholder="Search proxies..."
+            placeholder="搜索隧道..."
             :prefix-icon="Search"
             clearable
             class="main-search"
@@ -40,13 +40,13 @@
 
           <el-select
             :model-value="selectedClientKey"
-            placeholder="All Clients"
+            placeholder="所有客户端"
             clearable
             filterable
             class="client-select"
             @change="onClientFilterChange"
           >
-            <el-option label="All Clients" value="" />
+            <el-option label="全部客户端" value="" />
             <el-option
               v-if="clientIDFilter && !selectedClientInList"
               :label="`${userFilter ? userFilter + '.' : ''}${clientIDFilter} (not found)`"
@@ -85,7 +85,7 @@
         />
       </div>
       <div v-else-if="!loading" class="empty-state">
-        <el-empty description="No proxies found" />
+        <el-empty description="未找到隧道" />
       </div>
     </div>
   </div>
