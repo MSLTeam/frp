@@ -17,6 +17,17 @@
         <div
           class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto"
         >
+          <div class="w-full sm:w-40 lg:w-40 shrink-0">
+            <el-select v-model="sortOption" placeholder="默认排序">
+              <el-option label="默认排序" value="default" />
+              <el-option label="入站流量 ↑" value="trafficInAsc" />
+              <el-option label="入站流量 ↓" value="trafficInDesc" />
+              <el-option label="出站流量 ↑" value="trafficOutAsc" />
+              <el-option label="出站流量 ↓" value="trafficOutDesc" />
+              <el-option label="连接数 ↑" value="connsAsc" />
+              <el-option label="连接数 ↓" value="connsDesc" />
+            </el-select>
+          </div>
           <div class="w-full sm:w-40 lg:w-48 shrink-0">
             <el-select
               :model-value="selectedClientKey"
@@ -186,6 +197,7 @@ const proxies = ref<BaseProxy[]>([])
 const clients = ref<Client[]>([])
 const loading = ref(false)
 const searchText = ref('')
+const sortOption = ref('default')
 const clientIDFilter = ref((route.query.clientID as string) || '')
 const userFilter = ref((route.query.user as string) || '')
 
@@ -224,17 +236,44 @@ const selectedClientInList = computed(() => {
 const filteredProxies = computed(() => {
   let result = proxies.value
 
-  // Filter by clientID and user if specified
   if (clientIDFilter.value) {
     result = result.filter(
       (p) => p.clientID === clientIDFilter.value && p.user === userFilter.value,
     )
   }
 
-  // Filter by search text
   if (searchText.value) {
     const search = searchText.value.toLowerCase()
     result = result.filter((p) => p.name.toLowerCase().includes(search))
+  }
+
+  // ====== 排序逻辑 ======
+  if (sortOption.value !== 'default') {
+    result = [...result].sort((a: any, b: any) => {
+      const valAIn = a.todayTrafficIn || 0
+      const valBIn = b.todayTrafficIn || 0
+      const valAOut = a.todayTrafficOut || 0
+      const valBOut = b.todayTrafficOut || 0
+      const valAConns = a.curConns || 0
+      const valBConns = b.curConns || 0
+
+      switch (sortOption.value) {
+        case 'trafficInAsc':
+          return valAIn - valBIn
+        case 'trafficInDesc':
+          return valBIn - valAIn
+        case 'trafficOutAsc':
+          return valAOut - valBOut
+        case 'trafficOutDesc':
+          return valBOut - valAOut
+        case 'connsAsc':
+          return valAConns - valBConns
+        case 'connsDesc':
+          return valBConns - valAConns
+        default:
+          return 0
+      }
+    })
   }
 
   return result
