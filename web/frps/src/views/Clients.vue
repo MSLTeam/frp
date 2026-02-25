@@ -144,8 +144,11 @@ const filteredClients = computed(() => {
   return result
 })
 
-const fetchData = async () => {
-  loading.value = true
+const fetchData = async (showLoading = true) => {
+  if (showLoading) {
+    loading.value = true
+  }
+
   try {
     const json = await getClients()
     clients.value = json.map((data) => new Client(data))
@@ -156,13 +159,15 @@ const fetchData = async () => {
       type: 'error',
     })
   } finally {
-    loading.value = false
+    if (showLoading) {
+      loading.value = false
+    }
   }
 }
 
 const startAutoRefresh = () => {
   refreshTimer = window.setInterval(() => {
-    fetchData()
+    fetchData(false)
   }, 5000)
 }
 
