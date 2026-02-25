@@ -392,8 +392,8 @@ const fetchData = async () => {
   } catch (err) {
     ElMessage({
       showClose: true,
-      message: 'Get server info from frps failed!',
-      type: 'error',
+      message: '获取服务器信息失败',
+      type: 'warning',
     })
   }
 }
