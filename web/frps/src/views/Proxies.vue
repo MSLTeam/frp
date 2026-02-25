@@ -250,12 +250,12 @@ const filteredProxies = computed(() => {
   // ====== 排序逻辑 ======
   if (sortOption.value !== 'default') {
     result = [...result].sort((a: any, b: any) => {
-      const valAIn = a.todayTrafficIn || 0
-      const valBIn = b.todayTrafficIn || 0
-      const valAOut = a.todayTrafficOut || 0
-      const valBOut = b.todayTrafficOut || 0
-      const valAConns = a.curConns || 0
-      const valBConns = b.curConns || 0
+      const valAIn = a.trafficIn || 0
+      const valBIn = b.trafficIn || 0
+      const valAOut = a.trafficOut || 0
+      const valBOut = b.trafficOut || 0
+      const valAConns = a.conns || 0
+      const valBConns = b.conns || 0
 
       switch (sortOption.value) {
         case 'trafficInAsc':
