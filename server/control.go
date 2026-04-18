@@ -623,7 +623,7 @@ func (ctl *Control) CloseProxy(closeMsg *msg.CloseProxy) (err error) {
 	pxy, ok := ctl.proxies[closeMsg.ProxyName]
 	if !ok {
 		ctl.mu.Unlock()
-		return
+		return fmt.Errorf("proxy [%s] not found in this control", closeMsg.ProxyName)
 	}
 
 	if ctl.sessionCtx.ServerCfg.MaxPortsPerClient > 0 {
@@ -634,4 +634,11 @@ func (ctl *Control) CloseProxy(closeMsg *msg.CloseProxy) (err error) {
 
 	ctl.closeProxy(pxy)
 	return
+}
+
+// CloseProxyByName closes an online proxy by name through the normal Control path,
+// keeping ctl.proxies, portsUsedNum, metrics and plugin hooks all consistent.
+// Returns an error if the proxy is not found in this Control.
+func (ctl *Control) CloseProxyByName(name string) error {
+	return ctl.CloseProxy(&msg.CloseProxy{ProxyName: name})
 }

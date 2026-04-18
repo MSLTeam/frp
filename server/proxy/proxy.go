@@ -406,8 +406,6 @@ func (pm *Manager) GetByUser(user string) []Proxy {
 	return result
 }
 
-// CloseWithMetrics 关闭 proxy、从 Manager 中移除、并更新 metrics
-// 对应 Control.closeProxy 的逻辑
 func (pm *Manager) CloseWithMetrics(name string) bool {
 	pxy, ok := pm.GetByName(name)
 	if !ok {
