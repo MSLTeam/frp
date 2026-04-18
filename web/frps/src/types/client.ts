@@ -3,7 +3,6 @@ export interface ClientInfoData {
   user: string
   clientID: string
   runID: string
-  version?: string
   hostname: string
   clientIP?: string
   metas?: Record<string, string>
