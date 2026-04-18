@@ -8,11 +8,12 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ClientCard: typeof import('./src/components/ClientCard.vue')['default']
-    ElDialog: typeof import('element-plus/es')['ElDialog']
     ElEmpty: typeof import('element-plus/es')['ElEmpty']
     ElIcon: typeof import('element-plus/es')['ElIcon']
     ElInput: typeof import('element-plus/es')['ElInput']
-    ElPopover: typeof import('element-plus/es')['ElPopover']
+    ElOption: typeof import('element-plus/es')['ElOption']
+    ElPopconfirm: typeof import('element-plus/es')['ElPopconfirm']
+    ElSelect: typeof import('element-plus/es')['ElSelect']
     ElSwitch: typeof import('element-plus/es')['ElSwitch']
     ElTooltip: typeof import('element-plus/es')['ElTooltip']
     ProxyCard: typeof import('./src/components/ProxyCard.vue')['default']
