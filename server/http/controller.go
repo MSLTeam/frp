@@ -67,6 +67,7 @@ func NewController(
 		serverCfg:      serverCfg,
 		clientRegistry: clientRegistry,
 		pxyManager:     pxyManager,
+		ctlManager:     ctlManager,
 	}
 }
 
