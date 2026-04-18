@@ -38,6 +38,7 @@ type Controller struct {
 	serverCfg      *v1.ServerConfig
 	clientRegistry *registry.ClientRegistry
 	pxyManager     ProxyManager
+	ctlManager     ControlManager
 }
 
 type ProxyManager interface {
@@ -46,15 +47,27 @@ type ProxyManager interface {
 	CloseWithMetrics(name string) bool
 }
 
+// ProxyCloser is implemented by server.Control.
+type ProxyCloser interface {
+	CloseProxyByName(name string) error
+}
+
+// ControlManager is the subset of server.ControlManager used by the HTTP controller.
+type ControlManager interface {
+	GetByUser(user string) ([]ProxyCloser, bool)
+}
+
 func NewController(
 	serverCfg *v1.ServerConfig,
 	clientRegistry *registry.ClientRegistry,
 	pxyManager ProxyManager,
+	ctlManager ControlManager,
 ) *Controller {
 	return &Controller{
 		serverCfg:      serverCfg,
 		clientRegistry: clientRegistry,
 		pxyManager:     pxyManager,
+		ctlManager:     ctlManager,
 	}
 }
 
@@ -231,11 +244,16 @@ func (c *Controller) DeleteProxies(ctx *httppkg.Context) (any, error) {
 	return httppkg.GeneralResponse{Code: 200, Msg: "success"}, nil
 }
 
-// DELETE /api/close/{user}
+// GET /api/close/{user}
 func (c *Controller) CloseProxies(ctx *httppkg.Context) (any, error) {
 	user := ctx.Param("user")
 	if user == "" {
 		return nil, httppkg.NewError(http.StatusBadRequest, "missing user")
+	}
+
+	ctls, ok := c.ctlManager.GetByUser(user)
+	if !ok || len(ctls) == 0 {
+		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("no online connections found for user [%s]", user))
 	}
 
 	proxies := c.pxyManager.GetByUser(user)
@@ -245,15 +263,19 @@ func (c *Controller) CloseProxies(ctx *httppkg.Context) (any, error) {
 
 	closed := 0
 	for _, pxy := range proxies {
-		if c.pxyManager.CloseWithMetrics(pxy.GetName()) {
-			closed++
+		for _, ctl := range ctls {
+			if err := ctl.CloseProxyByName(pxy.GetName()); err == nil {
+				closed++
+				break
+			}
 		}
 	}
+
 	log.Infof("closed [%d/%d] online proxies for user [%s]", closed, len(proxies), user)
 	return httppkg.GeneralResponse{Code: 200, Msg: fmt.Sprintf("closed %d proxies", closed)}, nil
 }
 
-// DELETE /api/close/{user}/{name}
+// GET /api/close/{user}/{name}
 func (c *Controller) CloseProxy(ctx *httppkg.Context) (any, error) {
 	user := ctx.Param("user")
 	name := ctx.Param("name")
@@ -272,9 +294,19 @@ func (c *Controller) CloseProxy(ctx *httppkg.Context) (any, error) {
 		return nil, httppkg.NewError(http.StatusForbidden, fmt.Sprintf("proxy [%s] does not belong to user [%s]", name, user))
 	}
 
-	c.pxyManager.CloseWithMetrics(name)
-	log.Infof("closed proxy [%s] for user [%s]", name, user)
-	return httppkg.GeneralResponse{Code: 200, Msg: "success"}, nil
+	ctls, ok := c.ctlManager.GetByUser(user)
+	if !ok || len(ctls) == 0 {
+		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("no online connection found for user [%s]", user))
+	}
+
+	for _, ctl := range ctls {
+		if err := ctl.CloseProxyByName(name); err == nil {
+			log.Infof("closed proxy [%s] for user [%s]", name, user)
+			return httppkg.GeneralResponse{Code: 200, Msg: "success"}, nil
+		}
+	}
+
+	return nil, httppkg.NewError(http.StatusInternalServerError, fmt.Sprintf("failed to close proxy [%s]", name))
 }
 
 func (c *Controller) getProxyStatsByType(proxyType string) (proxyInfos []*model.ProxyStatsInfo) {
