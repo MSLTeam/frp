@@ -42,6 +42,8 @@ type Controller struct {
 
 type ProxyManager interface {
 	GetByName(name string) (proxy.Proxy, bool)
+	GetByUser(user string) []proxy.Proxy
+	CloseWithMetrics(name string) bool
 }
 
 func NewController(
@@ -226,6 +228,52 @@ func (c *Controller) DeleteProxies(ctx *httppkg.Context) (any, error) {
 	}
 	cleared, total := mem.StatsCollector.ClearOfflineProxies()
 	log.Infof("cleared [%d] offline proxies, total [%d] proxies", cleared, total)
+	return httppkg.GeneralResponse{Code: 200, Msg: "success"}, nil
+}
+
+// DELETE /api/close/{user}
+func (c *Controller) CloseProxies(ctx *httppkg.Context) (any, error) {
+	user := ctx.Param("user")
+	if user == "" {
+		return nil, httppkg.NewError(http.StatusBadRequest, "missing user")
+	}
+
+	proxies := c.pxyManager.GetByUser(user)
+	if len(proxies) == 0 {
+		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("no online proxies found for user [%s]", user))
+	}
+
+	closed := 0
+	for _, pxy := range proxies {
+		if c.pxyManager.CloseWithMetrics(pxy.GetName()) {
+			closed++
+		}
+	}
+	log.Infof("closed [%d/%d] online proxies for user [%s]", closed, len(proxies), user)
+	return httppkg.GeneralResponse{Code: 200, Msg: fmt.Sprintf("closed %d proxies", closed)}, nil
+}
+
+// DELETE /api/close/{user}/{name}
+func (c *Controller) CloseProxy(ctx *httppkg.Context) (any, error) {
+	user := ctx.Param("user")
+	name := ctx.Param("name")
+	if user == "" {
+		return nil, httppkg.NewError(http.StatusBadRequest, "missing user")
+	}
+	if name == "" {
+		return nil, httppkg.NewError(http.StatusBadRequest, "missing proxy name")
+	}
+
+	pxy, ok := c.pxyManager.GetByName(name)
+	if !ok {
+		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("proxy [%s] is not online", name))
+	}
+	if pxy.GetUserInfo().User != user {
+		return nil, httppkg.NewError(http.StatusForbidden, fmt.Sprintf("proxy [%s] does not belong to user [%s]", name, user))
+	}
+
+	c.pxyManager.CloseWithMetrics(name)
+	log.Infof("closed proxy [%s] for user [%s]", name, user)
 	return httppkg.GeneralResponse{Code: 200, Msg: "success"}, nil
 }
 

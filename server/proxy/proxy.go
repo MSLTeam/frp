@@ -393,3 +393,28 @@ func (pm *Manager) GetByName(name string) (pxy Proxy, ok bool) {
 	pxy, ok = pm.pxys[name]
 	return
 }
+
+func (pm *Manager) GetByUser(user string) []Proxy {
+	pm.mu.RLock()
+	defer pm.mu.RUnlock()
+	var result []Proxy
+	for _, pxy := range pm.pxys {
+		if pxy.GetUserInfo().User == user {
+			result = append(result, pxy)
+		}
+	}
+	return result
+}
+
+// CloseWithMetrics 关闭 proxy、从 Manager 中移除、并更新 metrics
+// 对应 Control.closeProxy 的逻辑
+func (pm *Manager) CloseWithMetrics(name string) bool {
+	pxy, ok := pm.GetByName(name)
+	if !ok {
+		return false
+	}
+	pxy.Close()
+	pm.Del(name)
+	metrics.Server.CloseProxy(name, pxy.GetConfigurer().GetBaseConfig().Type)
+	return true
+}
