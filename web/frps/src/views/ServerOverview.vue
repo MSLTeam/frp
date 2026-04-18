@@ -389,7 +389,7 @@ const fetchData = async () => {
         data.value.proxyCounts += count || 0
       })
     }
-  } catch {
+  } catch (err) {
     ElMessage({
       showClose: true,
       message: '获取服务器信息失败',
