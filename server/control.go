@@ -374,7 +374,7 @@ func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
 		select {
 		case <-ticker.C:
 			apiPxyMsg := mslapi.PxyMsg{
-				ServerToken:  ctl.serverCfg.ServerToken,
+				ServerToken:  ctl.sessionCtx.ServerCfg.ServerToken,
 				UserToken:    ctl.sessionCtx.LoginMsg.User,
 				ProxyName:    strings.Split(pxyMsg.ProxyName, ".")[1],
 				RemotePort:   pxyMsg.RemotePort,
@@ -527,7 +527,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 	}
 
 	apiPxyMsg := mslapi.PxyMsg{
-		ServerToken:  ctl.serverCfg.ServerToken,
+		ServerToken:  ctl.sessionCtx.ServerCfg.ServerToken,
 		UserToken:    ctl.sessionCtx.LoginMsg.User,
 		ProxyName:    strings.Split(pxyMsg.ProxyName, ".")[1],
 		RemotePort:   pxyMsg.RemotePort,
@@ -539,7 +539,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 
 	retMsg, _err := apiService.VerifyTunnel(apiPxyMsg)
 	if _err != nil {
-		err = fmt.Errorf(retMsg)
+		err = fmt.Errorf("%s", retMsg)
 		return
 	}
 
