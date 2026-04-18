@@ -70,14 +70,10 @@ type ctlManagerAdapter struct {
 	cm *ControlManager
 }
 
-func (a *ctlManagerAdapter) GetByUser(user string) ([]adminapi.ProxyCloser, bool) {
-	ctls, ok := a.cm.GetByUser(user)
+func (a *ctlManagerAdapter) GetByID(runID string) (adminapi.ProxyCloser, bool) {
+	ctl, ok := a.cm.GetByID(runID)
 	if !ok {
 		return nil, false
 	}
-	result := make([]adminapi.ProxyCloser, len(ctls))
-	for i, ctl := range ctls {
-		result[i] = ctl
-	}
-	return result, true
+	return ctl, true
 }
