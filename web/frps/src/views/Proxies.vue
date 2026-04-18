@@ -130,6 +130,15 @@
         <span class="text-sm font-medium">暂无隧道数据</span>
       </div>
     </div>
+
+    <ConfirmDialog
+      v-model="showClearDialog"
+      title="Clear Offline"
+      message="Are you sure you want to clear all offline proxies?"
+      confirm-text="Clear"
+      danger
+      @confirm="handleClearConfirm"
+    />
   </div>
 </template>
 
@@ -155,6 +164,8 @@ import {
   SUDPProxy,
 } from '../utils/proxy'
 import ProxyCard from '../components/ProxyCard.vue'
+import PopoverMenu from '@shared/components/PopoverMenu.vue'
+import PopoverMenuItem from '@shared/components/PopoverMenuItem.vue'
 import {
   getProxiesByType,
   clearOfflineProxies as apiClearOfflineProxies,
@@ -224,6 +235,20 @@ const selectedClientKey = computed(() => {
   // Return a synthetic key even if not found, so the select shows the filter is active
   return client?.key || `${userFilter.value}:${clientIDFilter.value}`
 })
+
+const selectedClientLabel = computed(() => {
+  if (!clientIDFilter.value) return 'All Clients'
+  const client = clientOptions.value.find(
+    (c) => c.clientID === clientIDFilter.value && c.user === userFilter.value,
+  )
+  return client?.label || `${userFilter.value ? userFilter.value + '.' : ''}${clientIDFilter.value}`
+})
+
+const filteredClientOptions = (filterText: string) => {
+  if (!filterText) return clientOptions.value
+  const search = filterText.toLowerCase()
+  return clientOptions.value.filter((c) => c.label.toLowerCase().includes(search))
+}
 
 // Check if the filtered client exists in the client list
 const selectedClientInList = computed(() => {
@@ -368,6 +393,11 @@ const fetchData = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleClearConfirm = async () => {
+  showClearDialog.value = false
+  await clearOfflineProxies()
 }
 
 const clearOfflineProxies = async () => {

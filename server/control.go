@@ -67,22 +67,12 @@ func (cm *ControlManager) Add(runID string, ctl *Control) (old *Control) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
-	// Check for existing control and replace if necessary
 	var ok bool
 	old, ok = cm.ctlsByRunID[runID]
 	if ok {
 		old.Replaced(ctl)
 	}
-
-	// Add the control to the runID index
 	cm.ctlsByRunID[runID] = ctl
-
-	// Add the runID to the user index (ctlsByUser)
-	if ctl.loginMsg != nil {
-		user := ctl.loginMsg.User
-		cm.ctlsByUser[user] = append(cm.ctlsByUser[user], runID)
-	}
-
 	return
 }
 
@@ -91,25 +81,8 @@ func (cm *ControlManager) Del(runID string, ctl *Control) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 
-	// Check if the control exists and matches the provided one
 	if c, ok := cm.ctlsByRunID[runID]; ok && c == ctl {
-		// Delete from ctlsByRunID
 		delete(cm.ctlsByRunID, runID)
-
-		// Remove the runID from the ctlsByUser map
-		if ctl.loginMsg != nil {
-			user := ctl.loginMsg.User
-
-			// Remove the runID from the user's list in ctlsByUser
-			runIDs := cm.ctlsByUser[user]
-			for i, id := range runIDs {
-				if id == runID {
-					// Remove the runID from the slice
-					cm.ctlsByUser[user] = append(runIDs[:i], runIDs[i+1:]...)
-					break
-				}
-			}
-		}
 	}
 }
 
@@ -150,20 +123,33 @@ func (cm *ControlManager) Close() error {
 	return nil
 }
 
-type Control struct {
+// SessionContext encapsulates the input parameters for creating a new Control.
+type SessionContext struct {
 	// all resource managers and controllers
-	rc *controller.ResourceController
-
+	RC *controller.ResourceController
 	// proxy manager
-	pxyManager *proxy.Manager
-
+	PxyManager *proxy.Manager
 	// plugin manager
-	pluginManager *plugin.Manager
-
+	PluginManager *plugin.Manager
 	// verifies authentication based on selected method
-	authVerifier auth.Verifier
+	AuthVerifier auth.Verifier
 	// key used for connection encryption
-	encryptionKey []byte
+	EncryptionKey []byte
+	// control connection
+	Conn net.Conn
+	// indicates whether the connection is encrypted
+	ConnEncrypted bool
+	// login message
+	LoginMsg *msg.Login
+	// server configuration
+	ServerCfg *v1.ServerConfig
+	// client registry
+	ClientRegistry *registry.ClientRegistry
+}
+
+type Control struct {
+	// session context
+	sessionCtx *SessionContext
 
 	// other components can use this to communicate with client
 	msgTransporter transport.MessageTransporter
@@ -171,12 +157,6 @@ type Control struct {
 	// msgDispatcher is a wrapper for control connection.
 	// It provides a channel for sending messages, and you can register handlers to process messages based on their respective types.
 	msgDispatcher *msg.Dispatcher
-
-	// login message
-	loginMsg *msg.Login
-
-	// control connection
-	conn net.Conn
 
 	// work connections
 	workConnCh chan net.Conn
@@ -212,39 +192,16 @@ type Control struct {
 	doneCh        chan struct{}
 }
 
-// TODO(fatedier): Referencing the implementation of frpc, encapsulate the input parameters as SessionContext.
-func NewControl(
-	ctx context.Context,
-	rc *controller.ResourceController,
-	pxyManager *proxy.Manager,
-	pluginManager *plugin.Manager,
-	authVerifier auth.Verifier,
-	encryptionKey []byte,
-	ctlConn net.Conn,
-	ctlConnEncrypted bool,
-	loginMsg *msg.Login,
-	serverCfg *v1.ServerConfig,
-	inboundLimit uint64,
-	outboundLimit uint64,
-) (*Control, error) {
-	poolCount := loginMsg.PoolCount
-	if poolCount > int(serverCfg.Transport.MaxPoolCount) {
-		poolCount = int(serverCfg.Transport.MaxPoolCount)
-	}
+func NewControl(ctx context.Context, sessionCtx *SessionContext,
+	inboundLimit uint64, outboundLimit uint64) (*Control, error) {
+	poolCount := min(sessionCtx.LoginMsg.PoolCount, int(sessionCtx.ServerCfg.Transport.MaxPoolCount))
 	ctl := &Control{
-		rc:            rc,
-		pxyManager:    pxyManager,
-		pluginManager: pluginManager,
-		authVerifier:  authVerifier,
-		encryptionKey: encryptionKey,
-		conn:          ctlConn,
-		loginMsg:      loginMsg,
+		sessionCtx:    sessionCtx,
 		workConnCh:    make(chan net.Conn, poolCount+10),
 		proxies:       make(map[string]proxy.Proxy),
 		poolCount:     poolCount,
 		portsUsedNum:  0,
-		runID:         loginMsg.RunID,
-		serverCfg:     serverCfg,
+		runID:         sessionCtx.LoginMsg.RunID,
 		xl:            xlog.FromContextSafe(ctx),
 		ctx:           ctx,
 		inboundLimit:  inboundLimit,
@@ -253,14 +210,14 @@ func NewControl(
 	}
 	ctl.lastPing.Store(time.Now())
 
-	if ctlConnEncrypted {
-		cryptoRW, err := netpkg.NewCryptoReadWriter(ctl.conn, ctl.encryptionKey)
+	if sessionCtx.ConnEncrypted {
+		cryptoRW, err := netpkg.NewCryptoReadWriter(sessionCtx.Conn, sessionCtx.EncryptionKey)
 		if err != nil {
 			return nil, err
 		}
 		ctl.msgDispatcher = msg.NewDispatcher(cryptoRW)
 	} else {
-		ctl.msgDispatcher = msg.NewDispatcher(ctl.conn)
+		ctl.msgDispatcher = msg.NewDispatcher(sessionCtx.Conn)
 	}
 	ctl.registerMsgHandlers()
 	ctl.msgTransporter = transport.NewMessageTransporter(ctl.msgDispatcher)
@@ -274,7 +231,7 @@ func (ctl *Control) Start() {
 		RunID:   ctl.runID,
 		Error:   "",
 	}
-	_ = msg.WriteMsg(ctl.conn, loginRespMsg)
+	_ = msg.WriteMsg(ctl.sessionCtx.Conn, loginRespMsg)
 
 	go func() {
 		for i := 0; i < ctl.poolCount; i++ {
@@ -286,7 +243,7 @@ func (ctl *Control) Start() {
 }
 
 func (ctl *Control) Close() error {
-	ctl.conn.Close()
+	ctl.sessionCtx.Conn.Close()
 	return nil
 }
 
@@ -294,7 +251,7 @@ func (ctl *Control) Replaced(newCtl *Control) {
 	xl := ctl.xl
 	xl.Infof("replaced by client [%s]", newCtl.runID)
 	ctl.runID = ""
-	ctl.conn.Close()
+	ctl.sessionCtx.Conn.Close()
 }
 
 func (ctl *Control) RegisterWorkConn(conn net.Conn) error {
@@ -352,7 +309,7 @@ func (ctl *Control) GetWorkConn() (workConn net.Conn, err error) {
 				return
 			}
 
-		case <-time.After(time.Duration(ctl.serverCfg.UserConnTimeout) * time.Second):
+		case <-time.After(time.Duration(ctl.sessionCtx.ServerCfg.UserConnTimeout) * time.Second):
 			err = fmt.Errorf("timeout trying to get work connection")
 			xl.Warnf("%v", err)
 			return
@@ -365,15 +322,15 @@ func (ctl *Control) GetWorkConn() (workConn net.Conn, err error) {
 }
 
 func (ctl *Control) heartbeatWorker() {
-	if ctl.serverCfg.Transport.HeartbeatTimeout <= 0 {
+	if ctl.sessionCtx.ServerCfg.Transport.HeartbeatTimeout <= 0 {
 		return
 	}
 
 	xl := ctl.xl
 	go wait.Until(func() {
-		if time.Since(ctl.lastPing.Load().(time.Time)) > time.Duration(ctl.serverCfg.Transport.HeartbeatTimeout)*time.Second {
+		if time.Since(ctl.lastPing.Load().(time.Time)) > time.Duration(ctl.sessionCtx.ServerCfg.Transport.HeartbeatTimeout)*time.Second {
 			xl.Warnf("heartbeat timeout")
-			ctl.conn.Close()
+			ctl.sessionCtx.Conn.Close()
 			return
 		}
 	}, time.Second, ctl.doneCh)
@@ -382,6 +339,30 @@ func (ctl *Control) heartbeatWorker() {
 // block until Control closed
 func (ctl *Control) WaitClosed() {
 	<-ctl.doneCh
+}
+
+func (ctl *Control) loginUserInfo() plugin.UserInfo {
+	return plugin.UserInfo{
+		User:  ctl.sessionCtx.LoginMsg.User,
+		Metas: ctl.sessionCtx.LoginMsg.Metas,
+		RunID: ctl.sessionCtx.LoginMsg.RunID,
+	}
+}
+
+func (ctl *Control) closeProxy(pxy proxy.Proxy) {
+	pxy.Close()
+	ctl.sessionCtx.PxyManager.Del(pxy.GetName())
+	metrics.Server.CloseProxy(pxy.GetName(), pxy.GetConfigurer().GetBaseConfig().Type)
+
+	notifyContent := &plugin.CloseProxyContent{
+		User: ctl.loginUserInfo(),
+		CloseProxy: msg.CloseProxy{
+			ProxyName: pxy.GetName(),
+		},
+	}
+	go func() {
+		_ = ctl.sessionCtx.PluginManager.CloseProxy(notifyContent)
+	}()
 }
 
 func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
@@ -394,7 +375,7 @@ func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
 		case <-ticker.C:
 			apiPxyMsg := mslapi.PxyMsg{
 				ServerToken:  ctl.serverCfg.ServerToken,
-				UserToken:    ctl.loginMsg.User,
+				UserToken:    ctl.sessionCtx.LoginMsg.User,
 				ProxyName:    strings.Split(pxyMsg.ProxyName, ".")[1],
 				RemotePort:   pxyMsg.RemotePort,
 				Type:         pxyMsg.ProxyType,
@@ -406,7 +387,7 @@ func (ctl *Control) checkTunnelAvailable(pxyMsg *msg.NewProxy) {
 			retMsg, _err := apiService.VerifyTunnel(apiPxyMsg)
 			if _err != nil {
 				ctl.xl.Errorf(retMsg)
-				ctl.conn.Close()
+				ctl.sessionCtx.Conn.Close()
 			}
 		case <-ctl.doneCh:
 			ctl.xl.Infof("closing the VerifyTunnel Service...")
@@ -422,38 +403,23 @@ func (ctl *Control) worker() {
 	go ctl.msgDispatcher.Run()
 
 	<-ctl.msgDispatcher.Done()
-	ctl.conn.Close()
+	ctl.sessionCtx.Conn.Close()
 
 	ctl.mu.Lock()
-	defer ctl.mu.Unlock()
-
 	close(ctl.workConnCh)
 	for workConn := range ctl.workConnCh {
 		workConn.Close()
 	}
+	proxies := ctl.proxies
+	ctl.proxies = make(map[string]proxy.Proxy)
+	ctl.mu.Unlock()
 
-	for _, pxy := range ctl.proxies {
-		pxy.Close()
-		ctl.pxyManager.Del(pxy.GetName())
-		metrics.Server.CloseProxy(pxy.GetName(), pxy.GetConfigurer().GetBaseConfig().Type)
-
-		notifyContent := &plugin.CloseProxyContent{
-			User: plugin.UserInfo{
-				User:  ctl.loginMsg.User,
-				Metas: ctl.loginMsg.Metas,
-				RunID: ctl.loginMsg.RunID,
-			},
-			CloseProxy: msg.CloseProxy{
-				ProxyName: pxy.GetName(),
-			},
-		}
-		go func() {
-			_ = ctl.pluginManager.CloseProxy(notifyContent)
-		}()
+	for _, pxy := range proxies {
+		ctl.closeProxy(pxy)
 	}
 
 	metrics.Server.CloseClient()
-	ctl.clientRegistry.MarkOfflineByRunID(ctl.runID)
+	ctl.sessionCtx.ClientRegistry.MarkOfflineByRunID(ctl.runID)
 	xl.Infof("client exit success")
 	close(ctl.doneCh)
 }
@@ -472,15 +438,11 @@ func (ctl *Control) handleNewProxy(m msg.Message) {
 	inMsg := m.(*msg.NewProxy)
 
 	content := &plugin.NewProxyContent{
-		User: plugin.UserInfo{
-			User:  ctl.loginMsg.User,
-			Metas: ctl.loginMsg.Metas,
-			RunID: ctl.loginMsg.RunID,
-		},
+		User:     ctl.loginUserInfo(),
 		NewProxy: *inMsg,
 	}
 	var remoteAddr string
-	retContent, err := ctl.pluginManager.NewProxy(content)
+	retContent, err := ctl.sessionCtx.PluginManager.NewProxy(content)
 	if err == nil {
 		inMsg = &retContent.NewProxy
 		remoteAddr, err = ctl.RegisterProxy(inMsg)
@@ -496,15 +458,15 @@ func (ctl *Control) handleNewProxy(m msg.Message) {
 	if err != nil {
 		xl.Warnf("new proxy [%s] type [%s] error: %v", inMsg.ProxyName, inMsg.ProxyType, err)
 		resp.Error = util.GenerateResponseErrorString(fmt.Sprintf("new proxy [%s] error", inMsg.ProxyName),
-			err, lo.FromPtr(ctl.serverCfg.DetailedErrorsToClient))
+			err, lo.FromPtr(ctl.sessionCtx.ServerCfg.DetailedErrorsToClient))
 	} else {
 		resp.RemoteAddr = remoteAddr
 		xl.Infof("new proxy [%s] type [%s] success", inMsg.ProxyName, inMsg.ProxyType)
-		clientID := ctl.loginMsg.ClientID
+		clientID := ctl.sessionCtx.LoginMsg.ClientID
 		if clientID == "" {
-			clientID = ctl.loginMsg.RunID
+			clientID = ctl.sessionCtx.LoginMsg.RunID
 		}
-		metrics.Server.NewProxy(inMsg.ProxyName, inMsg.ProxyType, ctl.loginMsg.User, clientID)
+		metrics.Server.NewProxy(inMsg.ProxyName, inMsg.ProxyType, ctl.sessionCtx.LoginMsg.User, clientID)
 	}
 	_ = ctl.msgDispatcher.Send(resp)
 }
@@ -514,22 +476,18 @@ func (ctl *Control) handlePing(m msg.Message) {
 	inMsg := m.(*msg.Ping)
 
 	content := &plugin.PingContent{
-		User: plugin.UserInfo{
-			User:  ctl.loginMsg.User,
-			Metas: ctl.loginMsg.Metas,
-			RunID: ctl.loginMsg.RunID,
-		},
+		User: ctl.loginUserInfo(),
 		Ping: *inMsg,
 	}
-	retContent, err := ctl.pluginManager.Ping(content)
+	retContent, err := ctl.sessionCtx.PluginManager.Ping(content)
 	if err == nil {
 		inMsg = &retContent.Ping
-		err = ctl.authVerifier.VerifyPing(inMsg)
+		err = ctl.sessionCtx.AuthVerifier.VerifyPing(inMsg)
 	}
 	if err != nil {
 		xl.Warnf("received invalid ping: %v", err)
 		_ = ctl.msgDispatcher.Send(&msg.Pong{
-			Error: util.GenerateResponseErrorString("invalid ping", err, lo.FromPtr(ctl.serverCfg.DetailedErrorsToClient)),
+			Error: util.GenerateResponseErrorString("invalid ping", err, lo.FromPtr(ctl.sessionCtx.ServerCfg.DetailedErrorsToClient)),
 		})
 		return
 	}
@@ -540,17 +498,17 @@ func (ctl *Control) handlePing(m msg.Message) {
 
 func (ctl *Control) handleNatHoleVisitor(m msg.Message) {
 	inMsg := m.(*msg.NatHoleVisitor)
-	ctl.rc.NatHoleController.HandleVisitor(inMsg, ctl.msgTransporter, ctl.loginMsg.User)
+	ctl.sessionCtx.RC.NatHoleController.HandleVisitor(inMsg, ctl.msgTransporter, ctl.sessionCtx.LoginMsg.User)
 }
 
 func (ctl *Control) handleNatHoleClient(m msg.Message) {
 	inMsg := m.(*msg.NatHoleClient)
-	ctl.rc.NatHoleController.HandleClient(inMsg, ctl.msgTransporter)
+	ctl.sessionCtx.RC.NatHoleController.HandleClient(inMsg, ctl.msgTransporter)
 }
 
 func (ctl *Control) handleNatHoleReport(m msg.Message) {
 	inMsg := m.(*msg.NatHoleReport)
-	ctl.rc.NatHoleController.HandleReport(inMsg)
+	ctl.sessionCtx.RC.NatHoleController.HandleReport(inMsg)
 }
 
 func (ctl *Control) handleCloseProxy(m msg.Message) {
@@ -563,14 +521,14 @@ func (ctl *Control) handleCloseProxy(m msg.Message) {
 func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err error) {
 	var pxyConf v1.ProxyConfigurer
 	// Load configures from NewProxy message and validate.
-	pxyConf, err = config.NewProxyConfigurerFromMsg(pxyMsg, ctl.serverCfg)
+	pxyConf, err = config.NewProxyConfigurerFromMsg(pxyMsg, ctl.sessionCtx.ServerCfg)
 	if err != nil {
 		return
 	}
 
 	apiPxyMsg := mslapi.PxyMsg{
 		ServerToken:  ctl.serverCfg.ServerToken,
-		UserToken:    ctl.loginMsg.User,
+		UserToken:    ctl.sessionCtx.LoginMsg.User,
 		ProxyName:    strings.Split(pxyMsg.ProxyName, ".")[1],
 		RemotePort:   pxyMsg.RemotePort,
 		Type:         pxyMsg.ProxyType,
@@ -593,8 +551,8 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 
 	// User info
 	userInfo := plugin.UserInfo{
-		User:  ctl.loginMsg.User,
-		Metas: ctl.loginMsg.Metas,
+		User:  ctl.sessionCtx.LoginMsg.User,
+		Metas: ctl.sessionCtx.LoginMsg.Metas,
 		RunID: ctl.runID,
 	}
 
@@ -602,22 +560,22 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 	// In fact, it creates different proxies based on the proxy type. We just call run() here.
 	pxy, err := proxy.NewProxy(ctl.ctx, &proxy.Options{
 		UserInfo:           userInfo,
-		LoginMsg:           ctl.loginMsg,
+		LoginMsg:           ctl.sessionCtx.LoginMsg,
 		PoolCount:          ctl.poolCount,
-		ResourceController: ctl.rc,
+		ResourceController: ctl.sessionCtx.RC,
 		GetWorkConnFn:      ctl.GetWorkConn,
 		Configurer:         pxyConf,
-		ServerCfg:          ctl.serverCfg,
-		EncryptionKey:      ctl.encryptionKey,
+		ServerCfg:          ctl.sessionCtx.ServerCfg,
+		EncryptionKey:      ctl.sessionCtx.EncryptionKey,
 	}, lr, lw)
 	if err != nil {
 		return remoteAddr, err
 	}
 
 	// Check ports used number in each client
-	if ctl.serverCfg.MaxPortsPerClient > 0 {
+	if ctl.sessionCtx.ServerCfg.MaxPortsPerClient > 0 {
 		ctl.mu.Lock()
-		if ctl.portsUsedNum+pxy.GetUsedPortsNum() > int(ctl.serverCfg.MaxPortsPerClient) {
+		if ctl.portsUsedNum+pxy.GetUsedPortsNum() > int(ctl.sessionCtx.ServerCfg.MaxPortsPerClient) {
 			ctl.mu.Unlock()
 			err = fmt.Errorf("exceed the max_ports_per_client")
 			return
@@ -634,7 +592,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		}()
 	}
 
-	if ctl.pxyManager.Exist(pxyMsg.ProxyName) {
+	if ctl.sessionCtx.PxyManager.Exist(pxyMsg.ProxyName) {
 		err = fmt.Errorf("proxy [%s] already exists", pxyMsg.ProxyName)
 		return
 	}
@@ -649,7 +607,7 @@ func (ctl *Control) RegisterProxy(pxyMsg *msg.NewProxy) (remoteAddr string, err 
 		}
 	}()
 
-	err = ctl.pxyManager.Add(pxyMsg.ProxyName, pxy)
+	err = ctl.sessionCtx.PxyManager.Add(pxyMsg.ProxyName, pxy)
 	if err != nil {
 		return
 	}
@@ -668,28 +626,12 @@ func (ctl *Control) CloseProxy(closeMsg *msg.CloseProxy) (err error) {
 		return
 	}
 
-	if ctl.serverCfg.MaxPortsPerClient > 0 {
+	if ctl.sessionCtx.ServerCfg.MaxPortsPerClient > 0 {
 		ctl.portsUsedNum -= pxy.GetUsedPortsNum()
 	}
-	pxy.Close()
-	ctl.pxyManager.Del(pxy.GetName())
 	delete(ctl.proxies, closeMsg.ProxyName)
 	ctl.mu.Unlock()
 
-	metrics.Server.CloseProxy(pxy.GetName(), pxy.GetConfigurer().GetBaseConfig().Type)
-
-	notifyContent := &plugin.CloseProxyContent{
-		User: plugin.UserInfo{
-			User:  ctl.loginMsg.User,
-			Metas: ctl.loginMsg.Metas,
-			RunID: ctl.loginMsg.RunID,
-		},
-		CloseProxy: msg.CloseProxy{
-			ProxyName: pxy.GetName(),
-		},
-	}
-	go func() {
-		_ = ctl.pluginManager.CloseProxy(notifyContent)
-	}()
+	ctl.closeProxy(pxy)
 	return
 }

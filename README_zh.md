@@ -16,6 +16,26 @@ frp 是一个完全开源的项目，我们的开发工作完全依靠赞助者�
 <h3 align="center">Gold Sponsors</h3>
 <!--gold sponsors start-->
 <p align="center">
+  <a href="https://github.com/beclab/Olares" target="_blank">
+    <img width="420px" src="https://raw.githubusercontent.com/fatedier/frp/dev/doc/pic/sponsor_olares.jpeg">
+	<br>
+	<b>The sovereign cloud that puts you in control</b>
+	<br>
+	<sub>An open source, self-hosted alternative to public clouds, built for data ownership and privacy</sub>
+  </a>
+</p>
+
+<div align="center">
+
+## Recall.ai - API for meeting recordings
+
+If you're looking for a meeting recording API, consider checking out [Recall.ai](https://www.recall.ai/?utm_source=github&utm_medium=sponsorship&utm_campaign=fatedier-frp),
+
+an API that records Zoom, Google Meet, Microsoft Teams, in-person meetings, and more.
+
+</div>
+
+<p align="center">
   <a href="https://requestly.com/?utm_source=github&utm_medium=partnered&utm_campaign=frp" target="_blank">
     <img width="480px" src="https://github.com/user-attachments/assets/24670320-997d-4d62-9bca-955c59fe883d">
     <br>
@@ -32,25 +52,6 @@ frp 是一个完全开源的项目，我们的开发工作完全依靠赞助者�
 	<b>The complete IDE crafted for professional Go developers</b>
   </a>
 </p>
-
-<p align="center">
-  <a href="https://github.com/beclab/Olares" target="_blank">
-    <img width="420px" src="https://raw.githubusercontent.com/fatedier/frp/dev/doc/pic/sponsor_olares.jpeg">
-	<br>
-	<b>The sovereign cloud that puts you in control</b>
-	<br>
-	<sub>An open source, self-hosted alternative to public clouds, built for data ownership and privacy</sub>
-  </a>
-</p>
-<div align="center">
-
-## Recall.ai - API for meeting recordings
-
-If you're looking for a meeting recording API, consider checking out [Recall.ai](https://www.recall.ai/?utm_source=github&utm_medium=sponsorship&utm_campaign=fatedier-frp),
-
-an API that records Zoom, Google Meet, Microsoft Teams, in-person meetings, and more.
-
-</div>
 <!--gold sponsors end-->
 
 ## 为什么使用 frp ？

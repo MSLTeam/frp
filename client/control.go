@@ -25,6 +25,7 @@ import (
 	"github.com/fatedier/frp/pkg/auth"
 	v1 "github.com/fatedier/frp/pkg/config/v1"
 	"github.com/fatedier/frp/pkg/msg"
+	"github.com/fatedier/frp/pkg/naming"
 	"github.com/fatedier/frp/pkg/transport"
 	netpkg "github.com/fatedier/frp/pkg/util/net"
 	"github.com/fatedier/frp/pkg/util/wait"
@@ -157,6 +158,8 @@ func (ctl *Control) handleReqWorkConn(_ msg.Message) {
 		return
 	}
 
+	startMsg.ProxyName = naming.StripUserPrefix(ctl.sessionCtx.Common.User, startMsg.ProxyName)
+
 	// dispatch this work connection to related proxy
 	ctl.pm.HandleWorkConn(startMsg.ProxyName, workConn, &startMsg)
 }
@@ -167,11 +170,12 @@ func (ctl *Control) handleNewProxyResp(m msg.Message) {
 
 	// Server will return NewProxyResp message to each NewProxy message.
 	// Start a new proxy handler if no error got
-	err := ctl.pm.StartProxy(inMsg.ProxyName, inMsg.RemoteAddr, inMsg.Error)
+	proxyName := naming.StripUserPrefix(ctl.sessionCtx.Common.User, inMsg.ProxyName)
+	err := ctl.pm.StartProxy(proxyName, inMsg.RemoteAddr, inMsg.Error)
 	if err != nil {
-		xl.Warnf("[%s] start error: %v", inMsg.ProxyName, err)
+		xl.Warnf("[%s] start error: %v", proxyName, err)
 	} else {
-		xl.Infof("[%s] start proxy success", inMsg.ProxyName)
+		xl.Infof("[%s] start proxy success", proxyName)
 		if ctl.sessionCtx.RemoteDomain != "" && ctl.sessionCtx.RemoteDomain != ctl.sessionCtx.Common.ServerAddr {
 			ctl.
 				xl.Infof(" 隧道已成功启动！\n远程连接地址：%s \n若上面地址无法连接，请使用该IP：%v", ctl.sessionCtx.RemoteDomain+inMsg.RemoteAddr, ctl.sessionCtx.Common.ServerAddr+inMsg.RemoteAddr)

@@ -7,18 +7,6 @@
 _obj
 _test
 
-# Architecture specific extensions/prefixes
-*.[568vq]
-[568vq].out
-
-*.cgo1.go
-*.cgo2.c
-_cgo_defun.c
-_cgo_gotypes.go
-_cgo_export.*
-
-_testmain.go
-
 *.exe
 *.test
 *.prof
@@ -37,10 +25,14 @@ dist/
 client.crt
 client.key
 
+node_modules/
+
 # Cache
 *.swp
 frps
 build_win_frpc.bat
 
 # AI
-CLAUDE.md
+.claude/
+.sisyphus/
+.superpowers/
