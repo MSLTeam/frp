@@ -635,3 +635,11 @@ func (ctl *Control) CloseProxy(closeMsg *msg.CloseProxy) (err error) {
 	ctl.closeProxy(pxy)
 	return
 }
+
+func (ctl *Control) CloseProxyByName(proxyName string) error {
+	return ctl.CloseProxy(&msg.CloseProxy{ProxyName: proxyName})
+}
+
+func (ctl *Control) GetRunID() string {
+	return ctl.runID
+}

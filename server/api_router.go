@@ -48,7 +48,7 @@ func (svr *Service) registerRouteHandlers(helper *httppkg.RouterRegisterHelper) 
 	subRouter.HandleFunc("/api/clients/{key}", httppkg.MakeHTTPHandlerFunc(apiController.APIClientDetail)).Methods("GET")
 	subRouter.HandleFunc("/api/proxies", httppkg.MakeHTTPHandlerFunc(apiController.DeleteProxies)).Methods("DELETE")
 	subRouter.HandleFunc("/api/close/{user}", httppkg.MakeHTTPHandlerFunc(apiController.CloseProxies)).Methods("GET")
-	subRouter.HandleFunc("/api/close/{user}/{name}", httppkg.MakeHTTPHandlerFunc(apiController.CloseProxy)).Methods("GET")
+	subRouter.HandleFunc("/api/close/{user}/{runid}", httppkg.MakeHTTPHandlerFunc(apiController.CloseProxy)).Methods("GET")
 
 	// view
 	subRouter.Handle("/favicon.ico", http.FileServer(helper.AssetsFS)).Methods("GET")

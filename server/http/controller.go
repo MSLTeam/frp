@@ -38,12 +38,24 @@ type Controller struct {
 	serverCfg      *v1.ServerConfig
 	clientRegistry *registry.ClientRegistry
 	pxyManager     ProxyManager
+	ctlManager     ControlManager
 }
 
 type ProxyManager interface {
 	GetByName(name string) (proxy.Proxy, bool)
 	GetByUser(user string) []proxy.Proxy
-	CloseWithMetrics(name string) bool
+}
+
+type Control interface {
+	Close() error
+	CloseProxyByName(proxyName string) error
+	GetRunID() string
+}
+
+type ControlManager interface {
+	GetByID(runID string) (Control, bool)
+	GetByUser(user string) ([]Control, bool)
+	Close() error
 }
 
 func NewController(
@@ -231,49 +243,48 @@ func (c *Controller) DeleteProxies(ctx *httppkg.Context) (any, error) {
 	return httppkg.GeneralResponse{Code: 200, Msg: "success"}, nil
 }
 
-// DELETE /api/close/{user}
+// GET /api/close/{user}
 func (c *Controller) CloseProxies(ctx *httppkg.Context) (any, error) {
 	user := ctx.Param("user")
 	if user == "" {
 		return nil, httppkg.NewError(http.StatusBadRequest, "missing user")
 	}
 
-	proxies := c.pxyManager.GetByUser(user)
+	proxies, ok := c.ctlManager.GetByUser(user)
+	if !ok {
+		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("user [%s] is not online", user))
+	}
 	if len(proxies) == 0 {
 		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("no online proxies found for user [%s]", user))
 	}
 
 	closed := 0
-	for _, pxy := range proxies {
-		if c.pxyManager.CloseWithMetrics(pxy.GetName()) {
-			closed++
-		}
+	for _, ctl := range proxies {
+		ctl.CloseProxyByName(user + "." + ctl.GetRunID())
+		ctl.Close()
 	}
 	log.Infof("closed [%d/%d] online proxies for user [%s]", closed, len(proxies), user)
 	return httppkg.GeneralResponse{Code: 200, Msg: fmt.Sprintf("closed %d proxies", closed)}, nil
 }
 
-// DELETE /api/close/{user}/{name}
+// GET /api/close/{user}/{runid}
 func (c *Controller) CloseProxy(ctx *httppkg.Context) (any, error) {
 	user := ctx.Param("user")
-	name := ctx.Param("name")
+	runid := ctx.Param("runid")
 	if user == "" {
 		return nil, httppkg.NewError(http.StatusBadRequest, "missing user")
 	}
-	if name == "" {
+	if runid == "" {
 		return nil, httppkg.NewError(http.StatusBadRequest, "missing proxy name")
 	}
 
-	pxy, ok := c.pxyManager.GetByName(name)
+	ctl, ok := c.ctlManager.GetByID(runid)
 	if !ok {
-		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("proxy [%s] is not online", name))
+		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("proxy [%s] is not online", runid))
 	}
-	if pxy.GetUserInfo().User != user {
-		return nil, httppkg.NewError(http.StatusForbidden, fmt.Sprintf("proxy [%s] does not belong to user [%s]", name, user))
-	}
-
-	c.pxyManager.CloseWithMetrics(name)
-	log.Infof("closed proxy [%s] for user [%s]", name, user)
+	ctl.CloseProxyByName(user + "." + runid)
+	ctl.Close()
+	log.Infof("closed proxy [%s] for user [%s]", runid, user)
 	return httppkg.GeneralResponse{Code: 200, Msg: "success"}, nil
 }
 
