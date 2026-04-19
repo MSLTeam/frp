@@ -250,41 +250,50 @@ func (c *Controller) CloseProxies(ctx *httppkg.Context) (any, error) {
 		return nil, httppkg.NewError(http.StatusBadRequest, "missing user")
 	}
 
-	proxies, ok := c.ctlManager.GetByUser(user)
-	if !ok {
-		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("user [%s] is not online", user))
-	}
+	proxies := c.pxyManager.GetByUser(user)
 	if len(proxies) == 0 {
 		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("no online proxies found for user [%s]", user))
 	}
 
 	closed := 0
-	for _, ctl := range proxies {
-		ctl.CloseProxyByName(user + "." + ctl.GetRunID())
+	for _, pxy := range proxies {
+		pxyName := pxy.GetName()
+		runID := pxy.GetUserInfo().RunID
+		ctl, ok := c.ctlManager.GetByID(runID)
+		if !ok {
+			log.Warnf("proxy [%s] is online but control not found, maybe client is disconnecting", pxyName)
+			continue
+		}
+		ctl.CloseProxyByName(pxyName)
 		ctl.Close()
 	}
 	log.Infof("closed [%d/%d] online proxies for user [%s]", closed, len(proxies), user)
 	return httppkg.GeneralResponse{Code: 200, Msg: fmt.Sprintf("closed %d proxies", closed)}, nil
 }
 
-// GET /api/close/{user}/{runid}
+// GET /api/close/{user}/{name}
 func (c *Controller) CloseProxy(ctx *httppkg.Context) (any, error) {
 	user := ctx.Param("user")
-	runid := ctx.Param("runid")
+	_name := ctx.Param("name")
+	name := user + "." + _name
 	if user == "" {
 		return nil, httppkg.NewError(http.StatusBadRequest, "missing user")
 	}
-	if runid == "" {
+	if name == "" {
 		return nil, httppkg.NewError(http.StatusBadRequest, "missing proxy name")
 	}
-
-	ctl, ok := c.ctlManager.GetByID(runid)
+	pxy, ok := c.pxyManager.GetByName(name)
 	if !ok {
-		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("proxy [%s] is not online", runid))
+		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("proxy [%s] is not online", name))
 	}
-	ctl.CloseProxyByName(user + "." + runid)
+	runID := pxy.GetUserInfo().RunID
+	ctl, ok := c.ctlManager.GetByID(runID)
+	if !ok {
+		return nil, httppkg.NewError(http.StatusNotFound, fmt.Sprintf("proxy [%s] is not online", name))
+	}
+	ctl.CloseProxyByName(name)
 	ctl.Close()
-	log.Infof("closed proxy [%s] for user [%s]", runid, user)
+	log.Infof("closed proxy [%s] for user [%s]", name, user)
 	return httppkg.GeneralResponse{Code: 200, Msg: "success"}, nil
 }
 
