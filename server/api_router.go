@@ -36,7 +36,7 @@ func (svr *Service) registerRouteHandlers(helper *httppkg.RouterRegisterHelper) 
 		subRouter.Handle("/metrics", promhttp.Handler())
 	}
 
-	apiController := adminapi.NewController(svr.cfg, svr.clientRegistry, svr.pxyManager)
+	apiController := adminapi.NewController(svr.cfg, svr.clientRegistry, svr.pxyManager, &ctlManagerAdapter{cm: svr.ctlManager})
 
 	// apis
 	subRouter.HandleFunc("/api/serverinfo", httppkg.MakeHTTPHandlerFunc(apiController.APIServerInfo)).Methods("GET")
@@ -63,4 +63,32 @@ func (svr *Service) registerRouteHandlers(helper *httppkg.RouterRegisterHelper) 
 
 func healthz(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(200)
+}
+
+type ctlManagerAdapter struct {
+	cm *ControlManager
+}
+
+func (a *ctlManagerAdapter) GetByID(runID string) (adminapi.Control, bool) {
+	ctl, ok := a.cm.GetByID(runID)
+	if !ok {
+		return nil, false
+	}
+	return ctl, true
+}
+
+func (a *ctlManagerAdapter) GetByUser(user string) ([]adminapi.Control, bool) {
+	ctls, ok := a.cm.GetByUser(user)
+	if !ok {
+		return nil, false
+	}
+	result := make([]adminapi.Control, len(ctls))
+	for i, c := range ctls {
+		result[i] = c
+	}
+	return result, true
+}
+
+func (a *ctlManagerAdapter) Close() error {
+	return a.cm.Close()
 }
