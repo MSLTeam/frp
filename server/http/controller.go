@@ -49,7 +49,6 @@ type ProxyManager interface {
 type Control interface {
 	Close() error
 	CloseProxyByName(proxyName string) error
-	GetRunID() string
 }
 
 type ControlManager interface {
