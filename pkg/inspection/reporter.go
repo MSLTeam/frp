@@ -8,24 +8,34 @@ import (
 	"github.com/fatedier/frp/pkg/util/log"
 )
 
+// 计数聚合配置
 const (
-	// 【配置项】
-	AuditWindowSeconds = 120 // 统计时间窗口 (秒)
-	AuditThreshold     = 20  // 触发上报系统的阈值次数
-
-	// ANSI 颜色转义码 (在部分纯文本 log 文件中可能会显示为转义字符，如果不喜欢可以删掉)
-	colorReset  = "\033[0m"
-	colorYellow = "\033[33m"
+	AuditWindowSeconds = 10 
+	AuditThreshold     = 5  
 )
 
-// 集中定义哪些协议属于“需要触发风控报警的威胁”
-func isThreat(proto string) bool {
+type Policy int
+
+const (
+	PolicyIgnore  Policy = iota // 0: 忽略 (安全业务)
+	PolicyCount                 // 1: 计数聚合 (易误报协议，走高频并发检测)
+	PolicyInstant               // 2: 立即上报 (实锤违规协议，一发入魂)
+)
+
+// getThreatPolicy 判定协议的危险级别和审计策略
+func getThreatPolicy(proto string) Policy {
 	switch proto {
-	case "fet", "trojan", "socks", "openvpn", "wireguard", "bittorrent", "rdp":
-		return true
+	// 实锤违规：抓到一次握手特征直接击毙
+	case "trojan", "socks", "openvpn", "wireguard", "bittorrent":
+		return PolicyInstant
+
+	// 嫌疑观察：FET(全加密流量)
+	case "fet":
+		return PolicyCount
+
 	default:
-		// mc, vnc, mysql, redis 等视为安全业务协议
-		return false
+		// mc, rdp, vnc, mysql, redis, tls, http 等全部视为安全
+		return PolicyIgnore
 	}
 }
 
@@ -37,52 +47,59 @@ type alertCounter struct {
 
 var alertCache sync.Map
 
-func reportToSystem(serverToken string, ip string, proto string, netType string, proxyName string, isThreatProto bool) {
+func reportToSystem(serverToken string, ip string, proto string, netType string, proxyName string) {
 	log.Infof("[GFW_AUDIT] 特征命中 | 隧道: [%s] | 网络: %s | 来源IP: %s | 识别协议: %s",
 		proxyName, netType, ip, proto)
 
-	if !isThreatProto {
+	policy := getThreatPolicy(proto)
+	if policy == PolicyIgnore {
 		return
 	}
 
-	// 聚合统计逻辑 (以 "隧道名_协议名" 为粒度进行防抖)
-	cacheKey := proxyName + "_" + proto
-	val, ok := alertCache.Load(cacheKey)
-	var counter *alertCounter
+	currentCount := 1
+	shouldReport := false
 
-	if !ok {
-		counter = &alertCounter{startTime: time.Now().Unix(), count: 0}
-		val, _ = alertCache.LoadOrStore(cacheKey, counter)
-		counter = val.(*alertCounter)
-	} else {
-		counter = val.(*alertCounter)
+	if policy == PolicyInstant {
+		shouldReport = true
+	} else if policy == PolicyCount {
+		cacheKey := proxyName + "_" + proto
+		val, ok := alertCache.Load(cacheKey)
+		var counter *alertCounter
+
+		if !ok {
+			counter = &alertCounter{startTime: time.Now().Unix(), count: 0}
+			val, _ = alertCache.LoadOrStore(cacheKey, counter)
+			counter = val.(*alertCounter)
+		} else {
+			counter = val.(*alertCounter)
+		}
+
+		counter.mu.Lock()
+		now := time.Now().Unix()
+
+		if now-counter.startTime > AuditWindowSeconds {
+			counter.startTime = now
+			counter.count = 0
+		}
+
+		counter.count++
+		currentCount = counter.count
+		shouldReport = currentCount >= AuditThreshold
+
+		if shouldReport {
+			counter.count = 0
+			counter.startTime = now
+		}
+		counter.mu.Unlock()
 	}
-
-	// ========== 临界区开始 ==========
-	counter.mu.Lock()
-	now := time.Now().Unix()
-
-	if now-counter.startTime > AuditWindowSeconds {
-		counter.startTime = now
-		counter.count = 0
-	}
-
-	counter.count++
-	currentCount := counter.count
-	shouldReport := currentCount >= AuditThreshold
 
 	if shouldReport {
-		// 达到阈值，重置计数器防止重复上报
-		counter.count = 0
-		counter.startTime = now
-	}
-	counter.mu.Unlock()
-	// ========== 临界区结束 ==========
-
-	// 异步触发上报
-	if shouldReport {
-		log.Warnf("%s[GFW_WARNING] 流量审计异常 | 隧道 [%s] 在 %d 秒内受到 %d 次 [%s] 协议探测！正在调用 API...%s",
-			colorYellow, proxyName, AuditWindowSeconds, currentCount, proto, colorReset)
+		if policy == PolicyInstant {
+			log.Warnf("[GFW_WARNING] 触发现行违规 | 隧道 [%s] 捕获到实锤高危协议 [%s]！正在即时同步云端...", proxyName, proto)
+		} else {
+			log.Warnf("[GFW_WARNING] 流量并发异常 | 隧道 [%s] 在 %d 秒内受到 %d 次 [%s] 协议请求！疑似代理穿透，正在上报...",
+				proxyName, AuditWindowSeconds, currentCount, proto)
+		}
 
 		go sendToBackend(serverToken, proxyName, proto, netType, ip, currentCount)
 	}
@@ -106,21 +123,14 @@ func sendToBackend(serverToken, proxyName, protocol, netType, srcIp string, coun
 
 	retMsg, err := apiService.SubmitThreatLog(payload)
 	if err != nil {
-		log.Errorf("[GFW_ERROR] 流量风控上报失败 | 错误: %v | 后端信息: %s", err, retMsg)
+		log.Errorf("[GFW_ERROR] 风控上报失败 | 错误: %v | 后端信息: %s", err, retMsg)
 	} else {
-		log.Infof("%s[GFW_SUCCESS] 流量风控上报成功 | 隧道: %s | 结果: %s%s",
-			colorYellow, proxyName, retMsg, colorReset)
+		log.Infof("[GFW_SUCCESS] 风控同步成功 | 隧道: %s | 结果: %s", proxyName, retMsg)
 	}
 }
 
 type gfwLogger struct{}
 
-func (l *gfwLogger) Debugf(format string, args ...interface{}) {
-	log.Debugf(format, args...)
-}
-func (l *gfwLogger) Infof(format string, args ...interface{}) {
-	log.Infof(format, args...)
-}
-func (l *gfwLogger) Errorf(format string, args ...interface{}) {
-	log.Errorf(format, args...)
-}
+func (l *gfwLogger) Debugf(format string, args ...interface{}) { log.Debugf(format, args...) }
+func (l *gfwLogger) Infof(format string, args ...interface{})  { log.Infof(format, args...) }
+func (l *gfwLogger) Errorf(format string, args ...interface{}) { log.Errorf(format, args...) }

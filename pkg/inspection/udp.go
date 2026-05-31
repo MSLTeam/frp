@@ -98,8 +98,7 @@ func CheckUDP(srcAddr string, payload []byte, proxyName string, serverToken stri
 				}
 			}
 
-			isThreatProto := isThreat(detectedProto)
-			go reportToSystem(serverToken,srcAddr, detectedProto, "UDP", proxyName, isThreatProto)
+			go reportToSystem(serverToken, srcAddr, detectedProto, "UDP", proxyName)
 			
 			hasFiredLog = true
 			break

@@ -105,15 +105,15 @@ func (c *InspectTCPConn) Read(b []byte) (n int, err error) {
 					continue
 				}
 
-				isThreatProto := isThreat(detectedProto)
-				go reportToSystem(c.serverToken,c.RemoteAddr().String(), detectedProto, "TCP", c.proxyName, isThreatProto)
+				policy := getThreatPolicy(detectedProto)
+				go reportToSystem(c.serverToken, c.RemoteAddr().String(), detectedProto, "TCP", c.proxyName)
 
-				if isThreatProto {
-					hasFiredThreat = true
-					break // 抓到威胁，立刻终止所有其他流的分析
+				if policy != PolicyIgnore {
+					hasFiredThreat = true // 存在威胁
+					break 
 				} else {
 					c.knownSafe = true
-					done = true // 正常业务打卡下班收工
+					done = true // 正常下班收工
 				}
 			}
 
