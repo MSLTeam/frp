@@ -1,19 +1,19 @@
 package inspection
 
 import (
-	"log"
 	"sync"
 	"time"
 
 	"github.com/fatedier/frp/pkg/mslapi"
+	"github.com/fatedier/frp/pkg/util/log"
 )
 
 const (
 	// 【配置项】
 	AuditWindowSeconds = 120 // 统计时间窗口 (秒)
-	AuditThreshold     = 20 // 触发上报系统的阈值次数
+	AuditThreshold     = 20  // 触发上报系统的阈值次数
 
-	// ANSI 颜色转义码
+	// ANSI 颜色转义码 (在部分纯文本 log 文件中可能会显示为转义字符，如果不喜欢可以删掉)
 	colorReset  = "\033[0m"
 	colorYellow = "\033[33m"
 )
@@ -24,7 +24,7 @@ func isThreat(proto string) bool {
 	case "fet", "trojan", "socks", "openvpn", "wireguard", "bittorrent", "rdp":
 		return true
 	default:
-		// mc, rdp, vnc, mysql, redis 等视为安全业务协议
+		// mc, vnc, mysql, redis 等视为安全业务协议
 		return false
 	}
 }
@@ -38,10 +38,8 @@ type alertCounter struct {
 var alertCache sync.Map
 
 func reportToSystem(serverToken string, ip string, proto string, netType string, proxyName string, isThreatProto bool) {
-	nowStr := time.Now().Format("2006-01-02 15:04:05")
-
-	log.Printf("[GFW_AUDIT] 特征命中 | 时间: %s | 隧道: [%s] | 网络: %s | 来源IP: %s | 识别协议: %s \n",
-		nowStr, proxyName, netType, ip, proto)
+	log.Infof("[GFW_AUDIT] 特征命中 | 隧道: [%s] | 网络: %s | 来源IP: %s | 识别协议: %s",
+		proxyName, netType, ip, proto)
 
 	if !isThreatProto {
 		return
@@ -83,7 +81,7 @@ func reportToSystem(serverToken string, ip string, proto string, netType string,
 
 	// 异步触发上报
 	if shouldReport {
-		log.Printf("%s[GFW_WARNING] 流量审计异常 | 隧道 [%s] 在 %d 秒内受到 %d 次 [%s] 协议探测！正在调用 API...%s\n",
+		log.Warnf("%s[GFW_WARNING] 流量审计异常 | 隧道 [%s] 在 %d 秒内受到 %d 次 [%s] 协议探测！正在调用 API...%s",
 			colorYellow, proxyName, AuditWindowSeconds, currentCount, proto, colorReset)
 
 		go sendToBackend(serverToken, proxyName, proto, netType, ip, currentCount)
@@ -93,7 +91,7 @@ func reportToSystem(serverToken string, ip string, proto string, netType string,
 func sendToBackend(serverToken, proxyName, protocol, netType, srcIp string, count int) {
 	apiService, err := mslapi.MyAPIService()
 	if err != nil {
-		log.Printf("[GFW_ERROR] 无法获取 API Service: %v\n", err)
+		log.Errorf("[GFW_ERROR] 无法获取 API Service: %v", err)
 		return
 	}
 
@@ -108,16 +106,21 @@ func sendToBackend(serverToken, proxyName, protocol, netType, srcIp string, coun
 
 	retMsg, err := apiService.SubmitThreatLog(payload)
 	if err != nil {
-		log.Printf("[GFW_ERROR] 流量风控上报失败 | 错误: %v | 后端信息: %s\n", err, retMsg)
+		log.Errorf("[GFW_ERROR] 流量风控上报失败 | 错误: %v | 后端信息: %s", err, retMsg)
 	} else {
-		// 上报成功，打印黄色的高亮汇报结果
-		log.Printf("%s[GFW_SUCCESS] 流量风控上报成功 | 隧道: %s | 结果: %s%s\n",
+		log.Infof("%s[GFW_SUCCESS] 流量风控上报成功 | 隧道: %s | 结果: %s%s",
 			colorYellow, proxyName, retMsg, colorReset)
 	}
 }
 
 type gfwLogger struct{}
 
-func (l *gfwLogger) Debugf(format string, args ...interface{}) {}
-func (l *gfwLogger) Infof(format string, args ...interface{})  {}
-func (l *gfwLogger) Errorf(format string, args ...interface{}) {}
+func (l *gfwLogger) Debugf(format string, args ...interface{}) {
+	log.Debugf(format, args...)
+}
+func (l *gfwLogger) Infof(format string, args ...interface{}) {
+	log.Infof(format, args...)
+}
+func (l *gfwLogger) Errorf(format string, args ...interface{}) {
+	log.Errorf(format, args...)
+}
