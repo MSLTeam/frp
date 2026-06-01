@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
+	"bytes"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/fatedier/frp/pkg/msg"
+	"github.com/fatedier/frp/pkg/util/version"
 )
 
 // Based on LoCyanFrp Frp modification
@@ -21,7 +24,7 @@ var apiUrl = "https://user.mslmc.net/api/frp"
 var tr = &http.Transport{
 	DisableKeepAlives: true,
 }
-var ua = fmt.Sprintf("MSLFrp/1.0 (Frps)")
+var ua = fmt.Sprintf("MSLFrp/" + version.Full() + " (Frps)")
 
 func MyAPIService() (s *Service, err error) {
 	return &Service{}, nil
@@ -310,4 +313,64 @@ func (s Service) GetLimit(frpsToken string, userToken string) (inLimit, outLimit
 
 	// 这里直接返回 uint64 应该问题不大
 	return response.Data.Inbound, response.Data.Outbound, nil
+}
+
+// 异常流量风控上报 API
+type ThreatPayload struct {
+	ServerToken  string `json:"serverToken"`
+	ProxyName    string `json:"proxyName"`
+	Protocol     string `json:"protocol"`
+	Type         string `json:"type"`
+	SrcIp        string `json:"srcIp"`
+	TriggerCount int    `json:"triggerCount"`
+}
+
+// SubmitThreatLog 提交风控拦截日志至服务器
+func (s Service) SubmitThreatLog(payload ThreatPayload) (retMsg string, err error) {
+	apiStr := apiUrl + "/threat/submit"
+
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return "", err
+	}
+
+	// 复用全局 Transport，并附加 5 秒超时防拥塞
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   5 * time.Second,
+	}
+
+	req, err := http.NewRequest(http.MethodPost, apiStr, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return "", err
+	}
+	
+	req.Header.Set("User-Agent", ua)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var jsonResponse struct {
+		Code int    `json:"code"`
+		Msg  string `json:"msg"`
+	}
+
+	if err := json.Unmarshal(body, &jsonResponse); err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK || jsonResponse.Code != 200 {
+		return jsonResponse.Msg, errors.New("Status Code " + strconv.Itoa(jsonResponse.Code))
+	}
+
+	return jsonResponse.Msg, nil
 }

@@ -34,6 +34,7 @@ import (
 	netpkg "github.com/fatedier/frp/pkg/util/net"
 	"github.com/fatedier/frp/server/metrics"
 )
+import "github.com/fatedier/frp/pkg/inspection"
 
 func init() {
 	RegisterProxyFactory(reflect.TypeFor[*v1.UDPProxyConfig](), NewUDPProxy)
@@ -163,6 +164,18 @@ func (pxy *UDPProxy) Run() (remoteAddr string, err error) {
 					xl.Infof("sender goroutine for udp work connection closed")
 					return
 				}
+				var srcAddr string
+				if udpMsg.RemoteAddr != nil {
+					srcAddr = udpMsg.RemoteAddr.String()
+				} else {
+					srcAddr = "unknown_udp_src" 
+				}
+
+				if inspection.CheckUDP(srcAddr, udpMsg.Content, pxy.GetName(),pxy.serverCfg.ServerToken) { 
+					xl.Debugf("drop illegal udp packet from: %s", srcAddr)
+					continue
+				}
+
 				if errRet = msg.WriteMsg(conn, udpMsg); errRet != nil {
 					xl.Infof("sender goroutine for udp work connection closed: %v", errRet)
 					conn.Close()

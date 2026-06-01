@@ -132,6 +132,8 @@ type Service struct {
 }
 
 func NewService(cfg *v1.ServerConfig) (*Service, error) {
+	xl := xlog.FromContextSafe(context.Background())
+    xl.Infof("Initializing OpenGFW Inspection Engine...")
 	tlsConfig, err := transport.NewServerTLSConfig(
 		cfg.Transport.TLS.CertFile,
 		cfg.Transport.TLS.KeyFile,

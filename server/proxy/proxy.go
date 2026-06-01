@@ -36,6 +36,7 @@ import (
 	"github.com/fatedier/frp/server/controller"
 	"github.com/fatedier/frp/server/metrics"
 )
+import "github.com/fatedier/frp/pkg/inspection"
 
 var proxyFactoryRegistry = map[reflect.Type]func(*BaseProxy) Proxy{}
 
@@ -239,7 +240,8 @@ func (pxy *BaseProxy) startCommonTCPListenersHandler() {
 					return
 				}
 				xl.Infof("get a user connection [%s]", c.RemoteAddr().String())
-				go pxy.handleUserTCPConnection(c)
+				inspectedConn := inspection.WrapTCP(c, pxy.GetName(),pxy.serverCfg.ServerToken)
+				go pxy.handleUserTCPConnection(inspectedConn)
 			}
 		}(listener)
 	}
