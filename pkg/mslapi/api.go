@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/fatedier/frp/pkg/msg"
+	"github.com/fatedier/frp/pkg/util/version"
 )
 
 // Based on LoCyanFrp Frp modification
@@ -23,7 +24,7 @@ var apiUrl = "https://user.mslmc.net/api/frp"
 var tr = &http.Transport{
 	DisableKeepAlives: true,
 }
-var ua = fmt.Sprintf("MSLFrp/1.0 (Frps)")
+var ua = fmt.Sprintf("MSLFrp/" + version.Full() + " (Frps)")
 
 func MyAPIService() (s *Service, err error) {
 	return &Service{}, nil
