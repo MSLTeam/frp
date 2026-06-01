@@ -26,7 +26,7 @@ const (
 func getThreatPolicy(proto string) Policy {
 	switch proto {
 	// 实锤违规：抓到一次握手特征直接击毙
-	case "trojan", "socks", "openvpn", "wireguard", "bittorrent":
+	case "trojan", "socks", "openvpn", "wireguard", "bittorrent", "rtmp", "rtsp":
 		return PolicyInstant
 
 	// 嫌疑观察：FET(全加密流量)

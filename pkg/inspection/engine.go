@@ -23,6 +23,8 @@ func init() {
 		&VNCAnalyzer{},   // VNC 检测
 		&MySQLAnalyzer{}, // MySQL 检测
 		&RedisAnalyzer{}, // Redis 检测
+		&RTMPAnalyzer{},
+		&RTSPAnalyzer{},
 		&tcp.SocksAnalyzer{},
 		&tcp.TrojanAnalyzer{},
 		&udp.OpenVPNAnalyzer{},
